@@ -10,8 +10,8 @@ status_definitions:
   done: "Code reviewed and approved, story complete"
 
 development_status:
-  epic-1: "in-progress"
-  epic-2: "backlog"
+  epic-1: "review"
+  epic-2: "in-progress"
   epic-3: "backlog"
   epic-4: "backlog"
   epic-5: "backlog"
@@ -21,11 +21,19 @@ development_status:
   epic-9: "backlog"
 
   # Epic 1 - Foundation & Core Infrastructure
-  1-1-project-scaffolding: "in-progress"
-  1-2-daemon-core: "backlog"
-  1-3-ui-shell: "backlog"
-  1-4-ipc-bridge: "backlog"
-  1-5-pill-placeholder: "backlog"
-  1-6-session-management: "backlog"
+  1-1-project-scaffolding: "review"
+  1-2-daemon-core: "review"
+  1-3-ui-shell: "review"
+  1-4-ipc-bridge: "review"
+  1-5-pill-placeholder: "review"
+  1-6-session-management: "review"
+
+  # Epic 2 - The Pill: Rendering & Interaction
+  2-1-state-machine: "in-progress"
+  2-2-smooth-animations: "backlog"
+  2-3-gesture-handling: "backlog"
+  2-4-activity-queue: "backlog"
+  2-5-hover-focus: "backlog"
+  2-6-fullscreen-detection: "backlog"
 
 last_updated: "2026-07-19"

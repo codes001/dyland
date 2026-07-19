@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = [
+    "dyd-daemon",
+    "types",
+    "dyd-ui/src-tauri",
+]
+default-members = [
+    "dyd-daemon",
+    "types",
+]

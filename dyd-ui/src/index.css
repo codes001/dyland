@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .pill:hover {
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    transition: box-shadow 150ms ease;
+  }
+}
+
+.pill:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+.pill button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.pill button:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 1px;
+}

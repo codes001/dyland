@@ -1,0 +1,2 @@
+disallowed-methods = ["std::thread::spawn"]
+enum-variant-size-threshold = 200

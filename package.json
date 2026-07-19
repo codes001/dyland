@@ -1,0 +1,19 @@
+{
+  "name": "dyland",
+  "private": true,
+  "workspaces": [
+    "dyd-ui"
+  ],
+  "scripts": {
+    "dev": "concurrently -n daemon,ui -c red,blue \"cargo run -p dyd-daemon\" \"npm run dev -w dyd-ui\"",
+    "build": "cargo build -p dyd-daemon && npm run build -w dyd-ui",
+    "lint": "cargo clippy -- -D warnings && npm run lint -w dyd-ui",
+    "format": "cargo fmt && npm run format -w dyd-ui",
+    "format:check": "cargo fmt --check && npm run format:check -w dyd-ui",
+    "typecheck": "npm run typecheck -w dyd-ui",
+    "clean": "cargo clean && npm run clean -w dyd-ui"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
