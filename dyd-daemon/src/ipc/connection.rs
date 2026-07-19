@@ -97,10 +97,54 @@ fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck) -> Opti
                 status: format!("ok:uptime={}", status.uptime_secs),
             }))
         }
-        _ => {
-            tracing::warn!(command = ?cmd, "Unknown IPC command");
+        IpcCommand::CycleNext | IpcCommand::CyclePrev => {
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "unknown_command".to_string() }
+                dyd_types::ConnectionStatusPayload { status: "ok:queued".to_string() }
+            ))
+        }
+        IpcCommand::DismissActivity { activity_id: _ } => {
+            IpcEnvelope::event(IpcEvent::QueueEmptied)
+        }
+        IpcCommand::MediaPlayPause { .. }
+        | IpcCommand::MediaNext { .. }
+        | IpcCommand::MediaPrevious { .. }
+        | IpcCommand::MediaSeek { .. }
+        | IpcCommand::MediaSetVolume { .. } => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+            ))
+        }
+        IpcCommand::NotificationAction { .. } | IpcCommand::NotificationClose { .. } => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:notification".to_string() }
+            ))
+        }
+        IpcCommand::SetDnd { enabled } => {
+            IpcEnvelope::event(IpcEvent::DndChanged(dyd_types::DndPayload { enabled }))
+        }
+        IpcCommand::SetVolume { .. } | IpcCommand::SetMute { .. } => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:volume".to_string() }
+            ))
+        }
+        IpcCommand::SetBrightness { .. } => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:brightness".to_string() }
+            ))
+        }
+        IpcCommand::SetBluetoothPowered { .. } => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:bluetooth".to_string() }
+            ))
+        }
+        IpcCommand::GetConfig => {
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload { status: "ok:config_not_implemented".to_string() }
+            ))
+        }
+        IpcCommand::UpdateConfig { changes: _ } => {
+            IpcEnvelope::event(IpcEvent::ConfigChanged(
+                dyd_types::ConfigChangedPayload { changes: serde_json::json!({"status": "ok"}) }
             ))
         }
     };

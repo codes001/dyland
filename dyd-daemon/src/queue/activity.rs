@@ -3,8 +3,7 @@ use std::cmp::Ordering;
 use std::time::Instant;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Priority {
     Critical,
     High,
@@ -37,19 +36,18 @@ impl Ord for Priority {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Activity {
     pub id: Uuid,
     pub source: String,
-    #[serde(skip)]
     pub priority: Priority,
-    #[serde(skip)]
     pub timestamp: Instant,
     pub content: serde_json::Value,
     pub ttl_secs: Option<u64>,
 }
 
 impl Activity {
+    #[allow(dead_code)]
     pub fn new(source: String, priority: Priority, content: serde_json::Value) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -61,6 +59,7 @@ impl Activity {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_expired(&self) -> bool {
         self.ttl_secs
             .map(|ttl| self.timestamp.elapsed().as_secs() > ttl)

@@ -1,21 +1,21 @@
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use tokio::sync::watch;
 use tokio::time::Duration;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct FullscreenState {
-    is_fullscreen: Arc<AtomicBool>,
-    monitor_count: Arc<std::sync::atomic::AtomicU32>,
+    is_fullscreen: AtomicBool,
+    monitor_count: AtomicU32,
 }
 
 impl FullscreenState {
     pub fn new() -> Self {
         Self {
-            is_fullscreen: Arc::new(AtomicBool::new(false)),
-            monitor_count: Arc::new(std::sync::atomic::AtomicU32::new(0)),
+            is_fullscreen: AtomicBool::new(false),
+            monitor_count: AtomicU32::new(0),
         }
     }
 
@@ -53,7 +53,7 @@ impl Default for FullscreenState {
 }
 
 pub async fn poll_fullscreen(
-    fullscreen_state: FullscreenState,
+    fullscreen_state: Arc<FullscreenState>,
     tx: watch::Sender<bool>,
     mut shutdown_rx: watch::Receiver<()>,
 ) {
@@ -66,8 +66,7 @@ pub async fn poll_fullscreen(
                 break;
             }
             _ = tokio::time::sleep(POLL_INTERVAL) => {
-                let current = poll_dbus_fullscreen().await;
-                let is_full = current > 0;
+                let is_full = poll_fullscreen_state().await;
 
                 if is_full != last_fullscreen {
                     last_fullscreen = is_full;
@@ -80,38 +79,37 @@ pub async fn poll_fullscreen(
     }
 }
 
-async fn poll_dbus_fullscreen() -> u32 {
-    match zbus::Connection::session().await {
-        Ok(conn) => {
-            let proxy = match conn
-                .call_method(
-                    Some("org.gnome.Shell"),
-                    "/org/gnome/Shell",
-                    Some("org.gnome.Shell.Introspect"),
-                    "GetWindows",
-                    &(),
-                )
-                .await
-            {
-                Ok(msg) => msg,
-                Err(e) => {
-                    tracing::debug!(error = %e, "gnome shell introspection not available");
-                    return 0;
-                }
-            };
+async fn poll_fullscreen_state() -> bool {
+    let conn = match zbus::Connection::session().await {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
 
-            let windows: Vec<serde_json::Value> = match proxy.body().deserialize() {
-                Ok(w) => w,
-                Err(_) => return 0,
-            };
+    let result = conn
+        .call_method(
+            Some("org.gnome.Shell"),
+            "/org/gnome/Shell",
+            Some("org.gnome.Shell.Introspect"),
+            "GetWindows",
+            &(),
+        )
+        .await;
 
+    match result {
+        Ok(msg) => {
+            let body = msg.body();
+            let windows: Vec<std::collections::HashMap<String, zvariant::Value>> =
+                match body.deserialize() {
+                    Ok(w) => w,
+                    Err(_) => return false,
+                };
             windows
                 .iter()
-                .filter(|w| {
-                    w.get("fullscreen").and_then(|v| v.as_bool()).unwrap_or(false)
-                })
-                .count() as u32
+                .any(|w| matches!(w.get("fullscreen"), Some(zvariant::Value::Bool(true))))
         }
-        Err(_) => 0,
+        Err(e) => {
+            tracing::debug!(error = %e, "gnome shell introspection not available");
+            false
+        }
     }
 }

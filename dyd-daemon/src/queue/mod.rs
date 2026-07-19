@@ -1,7 +1,7 @@
 pub mod activity;
 pub mod priority;
 
-use activity::{Activity, Priority};
+use activity::Activity;
 use std::collections::BinaryHeap;
 use std::path::PathBuf;
 use uuid::Uuid;

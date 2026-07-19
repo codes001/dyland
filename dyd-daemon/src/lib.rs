@@ -1,10 +1,14 @@
 pub mod health;
 pub mod ipc;
 pub mod lifecycle;
+pub mod queue;
 pub mod signals;
+pub mod sources;
 
 pub use health::HealthCheck;
 pub use lifecycle::DaemonState;
+
+use sources::fullscreen::{poll_fullscreen, FullscreenState};
 
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
@@ -13,6 +17,8 @@ use tokio::sync::watch;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing_subscriber::EnvFilter;
+
+
 
 static LOG_INIT: OnceLock<()> = OnceLock::new();
 
@@ -25,6 +31,10 @@ pub struct Daemon {
     connected_clients: Arc<AtomicU32>,
     start_time: tokio::time::Instant,
     ipc_server_handle: Option<JoinHandle<()>>,
+    fullscreen_state: Arc<FullscreenState>,
+    fullscreen_tx: watch::Sender<bool>,
+    fullscreen_rx: watch::Receiver<bool>,
+    activity_queue: Arc<tokio::sync::Mutex<queue::ActivityQueue>>,
 }
 
 impl Daemon {
@@ -32,6 +42,9 @@ impl Daemon {
         let (shutdown_tx, shutdown_rx) = watch::channel(());
         let connected_clients = Arc::new(AtomicU32::new(0));
         let health = Arc::new(HealthCheck::new(connected_clients.clone()));
+        let (fullscreen_tx, fullscreen_rx) = watch::channel(false);
+        let fullscreen_state = Arc::new(FullscreenState::new());
+        let activity_queue = Arc::new(tokio::sync::Mutex::new(queue::ActivityQueue::new()));
 
         Self {
             state: DaemonState::Starting,
@@ -42,6 +55,10 @@ impl Daemon {
             connected_clients,
             start_time: tokio::time::Instant::now(),
             ipc_server_handle: None,
+            fullscreen_state,
+            fullscreen_tx,
+            fullscreen_rx,
+            activity_queue,
         }
     }
 
@@ -51,6 +68,7 @@ impl Daemon {
 
         self.connect_dbus().await;
         self.start_ipc_server().await;
+        self.start_fullscreen_poller().await;
         self.state = DaemonState::Running;
         self.health.set_ready();
         self.start_time = tokio::time::Instant::now();
@@ -126,6 +144,29 @@ impl Daemon {
         }
     }
 
+    async fn start_fullscreen_poller(&mut self) {
+        let state = self.fullscreen_state.clone();
+        let tx = self.fullscreen_tx.clone();
+        let shutdown_rx = self.shutdown_rx.clone();
+
+        tokio::spawn(async move {
+            poll_fullscreen(state, tx, shutdown_rx).await;
+        });
+        tracing::info!("fullscreen poller started");
+    }
+
+    pub fn activity_queue(&self) -> Arc<tokio::sync::Mutex<queue::ActivityQueue>> {
+        self.activity_queue.clone()
+    }
+
+    pub fn fullscreen_receiver(&self) -> watch::Receiver<bool> {
+        self.fullscreen_rx.clone()
+    }
+
+    pub fn fullscreen_state_ref(&self) -> Arc<FullscreenState> {
+        self.fullscreen_state.clone()
+    }
+
     async fn shutdown(&mut self) {
         self.state = DaemonState::ShuttingDown;
         self.health.set_shutting_down();
@@ -141,6 +182,8 @@ impl Daemon {
             drop(conn);
             tracing::info!("D-Bus connection closed");
         }
+
+        self.activity_queue.lock().await.clear();
 
         let _ = std::fs::remove_file("/tmp/dyd-daemon.sock");
 

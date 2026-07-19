@@ -11,7 +11,10 @@ pub enum IpcEvent {
     ConnectionStatus(ConnectionStatusPayload),
     ActivityQueued(ActivityPayload),
     ActivityDequeued(ActivityPayload),
+    ActivityChanged(ActivityPayload),
     QueueEmptied,
+    FullscreenChanged(FullscreenPayload),
+    DndChanged(DndPayload),
     ConfigChanged(ConfigChangedPayload),
 }
 
@@ -23,8 +26,20 @@ pub enum IpcCommand {
     DismissActivity { activity_id: String },
     CycleNext,
     CyclePrev,
+    MediaPlayPause { player: String },
+    MediaNext { player: String },
+    MediaPrevious { player: String },
+    MediaSeek { player: String, position_us: u64 },
+    MediaSetVolume { player: String, volume: f64 },
+    NotificationAction { id: u32, action_key: String, reply_text: Option<String> },
+    NotificationClose { id: u32 },
     SetDnd { enabled: bool },
+    SetVolume { volume: f64 },
+    SetMute { muted: bool },
+    SetBrightness { brightness: f64 },
+    SetBluetoothPowered { powered: bool },
     GetConfig,
+    UpdateConfig { changes: serde_json::Value },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,6 +160,17 @@ pub struct ActivityPayload {
     pub activity_id: String,
     pub source: String,
     pub content: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FullscreenPayload {
+    pub is_fullscreen: bool,
+    pub monitor: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DndPayload {
+    pub enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

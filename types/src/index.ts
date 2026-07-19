@@ -6,7 +6,10 @@ export type IpcEvent =
   | { type: "ConnectionStatus"; payload: ConnectionStatusPayload }
   | { type: "ActivityQueued"; payload: ActivityPayload }
   | { type: "ActivityDequeued"; payload: ActivityPayload }
+  | { type: "ActivityChanged"; payload: ActivityPayload }
   | { type: "QueueEmptied" }
+  | { type: "FullscreenChanged"; payload: FullscreenPayload }
+  | { type: "DndChanged"; payload: DndPayload }
   | { type: "ConfigChanged"; payload: ConfigChangedPayload };
 
 export type IpcCommand =
@@ -15,8 +18,20 @@ export type IpcCommand =
   | { type: "DismissActivity"; payload: { activity_id: string } }
   | { type: "CycleNext" }
   | { type: "CyclePrev" }
+  | { type: "MediaPlayPause"; payload: { player: string } }
+  | { type: "MediaNext"; payload: { player: string } }
+  | { type: "MediaPrevious"; payload: { player: string } }
+  | { type: "MediaSeek"; payload: { player: string; position_us: number } }
+  | { type: "MediaSetVolume"; payload: { player: string; volume: number } }
+  | { type: "NotificationAction"; payload: { id: number; action_key: string; reply_text?: string } }
+  | { type: "NotificationClose"; payload: { id: number } }
   | { type: "SetDnd"; payload: { enabled: boolean } }
-  | { type: "GetConfig" };
+  | { type: "SetVolume"; payload: { volume: number } }
+  | { type: "SetMute"; payload: { muted: boolean } }
+  | { type: "SetBrightness"; payload: { brightness: number } }
+  | { type: "SetBluetoothPowered"; payload: { powered: boolean } }
+  | { type: "GetConfig" }
+  | { type: "UpdateConfig"; payload: { changes: unknown } };
 
 export interface IpcEnvelope {
   id: string;
@@ -70,6 +85,15 @@ export interface ActivityPayload {
   activity_id: string;
   source: string;
   content: unknown;
+}
+
+export interface FullscreenPayload {
+  is_fullscreen: boolean;
+  monitor: string | null;
+}
+
+export interface DndPayload {
+  enabled: boolean;
 }
 
 export interface ConfigChangedPayload {
