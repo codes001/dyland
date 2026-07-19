@@ -1,0 +1,3 @@
+display_name: Distillator
+short_description: Lossless LLM-optimized compression of source documents.
+default_prompt: Help me with distillator

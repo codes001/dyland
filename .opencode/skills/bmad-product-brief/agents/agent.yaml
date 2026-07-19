@@ -1,0 +1,3 @@
+display_name: Product Brief
+short_description: Create or update product briefs through guided or autonomous discovery.
+default_prompt: Help me with product brief

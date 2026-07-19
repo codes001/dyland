@@ -1,0 +1,3 @@
+display_name: Sprint Status
+short_description: Summarize sprint status and surface risks.
+default_prompt: Help me with sprint status

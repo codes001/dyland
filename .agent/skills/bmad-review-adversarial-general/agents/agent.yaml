@@ -1,0 +1,3 @@
+display_name: Review Adversarial General
+short_description: Perform a Cynical Review and produce a findings report.
+default_prompt: Help me with review adversarial general

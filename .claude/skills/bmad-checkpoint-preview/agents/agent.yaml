@@ -1,0 +1,3 @@
+display_name: Checkpoint Preview
+short_description: LLM-assisted human-in-the-loop review.
+default_prompt: Help me with checkpoint preview

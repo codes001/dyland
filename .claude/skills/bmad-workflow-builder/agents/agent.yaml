@@ -1,0 +1,3 @@
+display_name: Workflow Builder
+short_description: Builds, converts, and analyzes workflows and skills.
+default_prompt: Help me with workflow builder

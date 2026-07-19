@@ -1,0 +1,3 @@
+display_name: Skill Creator
+short_description: Create, evaluate, and optimize skills with rigorous testing and architectural discipline
+default_prompt: Help me create a new skill for processing PDF documents with text extraction and form filling capabilities

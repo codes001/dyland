@@ -1,0 +1,3 @@
+display_name: Party Mode
+short_description: Orchestrates group discussions between installed BMAD agents, enabling natural multi-agent conversations where each agent is a real subagent with independent thinking.
+default_prompt: Help me with party mode

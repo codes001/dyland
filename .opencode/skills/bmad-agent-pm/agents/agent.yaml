@@ -1,0 +1,3 @@
+display_name: Agent Pm
+short_description: Product manager for PRD creation and requirements discovery.
+default_prompt: Help me with agent pm

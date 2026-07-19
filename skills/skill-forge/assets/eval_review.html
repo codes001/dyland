@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Trigger Eval Set</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --success: #3fb950;
+    --danger: #f85149;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 20px; margin-bottom: 8px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .skill-info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .skill-info h2 { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+  .skill-info p { font-size: 14px; }
+  .eval-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .eval-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .eval-number {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  .eval-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .eval-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+  .eval-query {
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: rgba(48, 54, 61, 0.3);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+  }
+  .eval-query[contenteditable="true"] {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .eval-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn-danger { color: var(--danger); }
+  .btn-danger:hover { border-color: var(--danger); }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .stats { font-size: 13px; color: var(--text-secondary); }
+  .add-btn {
+    margin-bottom: 16px;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+  }
+  .should-trigger { border-left: 3px solid var(--success); }
+  .should-not-trigger { border-left: 3px solid var(--danger); }
+</style>
+</head>
+<body>
+<h1>Review Trigger Eval Set</h1>
+<p class="subtitle">Review, edit, and toggle trigger expectations for each query. Click "Export Eval Set" when done.</p>
+
+<div class="skill-info">
+  <h2>Skill</h2>
+  <p id="skill-name">__SKILL_NAME_PLACEHOLDER__</p>
+  <h2 style="margin-top: 12px;">Current Description</h2>
+  <p id="skill-description" style="color: var(--text-secondary);">__SKILL_DESCRIPTION_PLACEHOLDER__</p>
+</div>
+
+<div class="controls">
+  <div class="stats" id="stats">Loading...</div>
+  <div>
+    <button class="btn" onclick="addEval(true)">+ Should Trigger</button>
+    <button class="btn" onclick="addEval(false)">+ Should Not Trigger</button>
+  </div>
+</div>
+
+<div id="evals-container"></div>
+
+<div style="margin-top: 24px; text-align: center;">
+  <button class="btn btn-primary" style="padding: 12px 32px; font-size: 14px;" onclick="exportEvalSet()">Export Eval Set</button>
+</div>
+
+<script>
+let evals = __EVAL_DATA_PLACEHOLDER__;
+
+function render() {
+  const container = document.getElementById('evals-container');
+  container.innerHTML = '';
+
+  let triggerCount = 0;
+  let notTriggerCount = 0;
+
+  evals.forEach((ev, index) => {
+    if (ev.should_trigger) triggerCount++;
+    else notTriggerCount++;
+
+    const div = document.createElement('div');
+    div.className = `eval-item ${ev.should_trigger ? 'should-trigger' : 'should-not-trigger'}`;
+    div.innerHTML = `
+      <div class="eval-header">
+        <span class="eval-number">#${index + 1}</span>
+        <div class="eval-toggle">
+          <label>Should trigger</label>
+          <input type="checkbox" ${ev.should_trigger ? 'checked' : ''} onchange="toggleTrigger(${index})">
+        </div>
+      </div>
+      <div class="eval-query" contenteditable="true" onblur="updateQuery(${index}, this.innerText)">${escapeHtml(ev.query)}</div>
+      <div class="eval-actions">
+        <button class="btn btn-danger" onclick="removeEval(${index})">Remove</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById('stats').textContent = 
+    `${evals.length} queries total — ${triggerCount} should trigger, ${notTriggerCount} should not trigger`;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function toggleTrigger(index) {
+  evals[index].should_trigger = !evals[index].should_trigger;
+  render();
+}
+
+function updateQuery(index, text) {
+  evals[index].query = text.trim();
+}
+
+function removeEval(index) {
+  evals.splice(index, 1);
+  render();
+}
+
+function addEval(shouldTrigger) {
+  evals.push({
+    query: "Enter your query here...",
+    should_trigger: shouldTrigger
+  });
+  render();
+  // Focus the new query
+  const items = document.querySelectorAll('.eval-query');
+  if (items.length > 0) {
+    items[items.length - 1].focus();
+  }
+}
+
+function exportEvalSet() {
+  // Clean up empty queries
+  evals = evals.filter(ev => ev.query.trim() && ev.query.trim() !== 'Enter your query here...');
+
+  const data = JSON.stringify(evals, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'eval_set.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>

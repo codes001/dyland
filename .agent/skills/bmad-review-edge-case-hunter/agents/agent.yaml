@@ -1,0 +1,3 @@
+display_name: Review Edge Case Hunter
+short_description: Walk every branching path and boundary condition in content, report only unhandled edge cases.
+default_prompt: Help me with review edge case hunter

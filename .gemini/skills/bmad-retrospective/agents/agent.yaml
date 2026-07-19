@@ -1,0 +1,3 @@
+display_name: Retrospective
+short_description: Post-epic review to extract lessons and assess success.
+default_prompt: Help me with retrospective

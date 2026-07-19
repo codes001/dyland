@@ -1,0 +1,31 @@
+# Sprint Status - dyland
+# Generated: 2026-07-19
+# Project Phase: Epic 1 Foundation & Core Infrastructure
+
+status_definitions:
+  backlog: "Not yet started, waiting in sprint backlog"
+  ready-for-dev: "Story context created, ready for implementation"
+  in-progress: "Actively being implemented"
+  review: "Implementation complete, awaiting code review"
+  done: "Code reviewed and approved, story complete"
+
+development_status:
+  epic-1: "in-progress"
+  epic-2: "backlog"
+  epic-3: "backlog"
+  epic-4: "backlog"
+  epic-5: "backlog"
+  epic-6: "backlog"
+  epic-7: "backlog"
+  epic-8: "backlog"
+  epic-9: "backlog"
+
+  # Epic 1 - Foundation & Core Infrastructure
+  1-1-project-scaffolding: "in-progress"
+  1-2-daemon-core: "backlog"
+  1-3-ui-shell: "backlog"
+  1-4-ipc-bridge: "backlog"
+  1-5-pill-placeholder: "backlog"
+  1-6-session-management: "backlog"
+
+last_updated: "2026-07-19"

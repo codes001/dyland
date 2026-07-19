@@ -1,0 +1,3 @@
+display_name: Check Implementation Readiness
+short_description: Validate PRD, UX, Architecture and Epics specs are complete.
+default_prompt: Help me with check implementation readiness

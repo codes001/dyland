@@ -1,0 +1,3 @@
+display_name: Index Docs
+short_description: Generates or updates an index.
+default_prompt: Help me with index docs

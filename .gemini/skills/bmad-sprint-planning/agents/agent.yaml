@@ -1,0 +1,3 @@
+display_name: Sprint Planning
+short_description: Generate sprint status tracking from epics.
+default_prompt: Help me with sprint planning

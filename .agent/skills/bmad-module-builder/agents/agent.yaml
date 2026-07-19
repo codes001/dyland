@@ -1,0 +1,3 @@
+display_name: Module Builder
+short_description: Plans, creates, and validates BMad modules.
+default_prompt: Help me with module builder

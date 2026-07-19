@@ -1,0 +1,3 @@
+display_name: Create Story
+short_description: Creates a dedicated story file with all the context the agent will need to implement it later.
+default_prompt: Help me with create story

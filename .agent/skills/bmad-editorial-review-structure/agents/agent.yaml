@@ -1,0 +1,3 @@
+display_name: Editorial Review Structure
+short_description: Structural editor that proposes cuts, reorganization, and simplification while preserving comprehension.
+default_prompt: Help me with editorial review structure

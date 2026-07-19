@@ -1,0 +1,3 @@
+display_name: Validate Prd
+short_description: Validate a PRD against standards.
+default_prompt: Help me with validate prd

@@ -1,0 +1,3 @@
+display_name: Generate Project Context
+short_description: Create project-context.
+default_prompt: Help me with generate project context

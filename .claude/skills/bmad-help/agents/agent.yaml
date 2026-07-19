@@ -1,0 +1,3 @@
+display_name: Help
+short_description: Analyzes current state and user query to answer BMad questions or recommend the next skill(s) to use.
+default_prompt: Help me with help
