@@ -1,6 +1,6 @@
 # Story 2.4: Multi-Activity Queue
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -80,4 +80,23 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Created `dyd-daemon/src/queue/activity.rs` with Activity struct, Priority enum with rank ordering
+- Created `dyd-daemon/src/queue/mod.rs` with ActivityQueue (BinaryHeap, max 20 items, dedup by ID, FIFO within priority)
+- Created `dyd-daemon/src/queue/priority.rs` with preemption logic and display durations
+- Updated `dyd-daemon/src/lib.rs` to include queue module and instantiate Arc<Mutex<ActivityQueue>>
+- Updated `dyd-daemon/src/ipc/connection.rs` to handle CycleNext/CyclePrev/DismissActivity/DndChanged commands
+- Updated `types/src/` (both Rust and TS) with new IPC events (ActivityChanged, FullscreenChanged, DndChanged) and commands
+- Created `dyd-ui/src/stores/activity-store.ts` with Zustand store: push, remove, cycleNext, cyclePrev, clear
+- Updated `dyd-ui/src/ipc/client.ts` to handle daemon-message events (FullscreenChanged, ActivityQueued, ActivityDequeued, QueueEmptied)
+
 ### File List
+
+- dyd-daemon/src/queue/mod.rs (new)
+- dyd-daemon/src/queue/activity.rs (new)
+- dyd-daemon/src/queue/priority.rs (new)
+- dyd-daemon/src/lib.rs (modified)
+- dyd-daemon/src/ipc/connection.rs (modified)
+- types/src/lib.rs (modified)
+- types/src/index.ts (modified)
+- dyd-ui/src/stores/activity-store.ts (new)
+- dyd-ui/src/ipc/client.ts (modified)

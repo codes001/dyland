@@ -23,6 +23,7 @@ export type IpcCommand =
   | { type: "MediaPrevious"; payload: { player: string } }
   | { type: "MediaSeek"; payload: { player: string; position_us: number } }
   | { type: "MediaSetVolume"; payload: { player: string; volume: number } }
+  | { type: "CyclePlayer"; payload: { player?: string } }
   | { type: "NotificationAction"; payload: { id: number; action_key: string; reply_text?: string } }
   | { type: "NotificationClose"; payload: { id: number } }
   | { type: "SetDnd"; payload: { enabled: boolean } }
@@ -59,6 +60,11 @@ export interface MediaChangedPayload {
   playback_status: string;
 }
 
+export interface NotificationActionItem {
+  key: string;
+  label: string;
+}
+
 export interface NotificationPayload {
   id: number;
   app_name: string;
@@ -66,6 +72,7 @@ export interface NotificationPayload {
   summary: string;
   body: string | null;
   urgency: string;
+  actions: NotificationActionItem[];
   timestamp: number;
 }
 

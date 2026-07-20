@@ -1,6 +1,6 @@
 # Story 2.5: Hover & Focus States
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -68,4 +68,14 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Hover glow effect via CSS: `.pill:hover { box-shadow: 0 0 8px rgba(255,255,255,0.3) }` with 150ms transition
+- Wrapped in `@media (hover: hover)` to exclude touch devices
+- Focus outline via `.pill:focus-visible { outline: 2px solid white; outline-offset: 2px }`
+- Dormant state has pointer-events: none (no hover/focus)
+- Pill has tabIndex, role="button", aria-expanded for keyboard accessibility
+- ExpandedView buttons have hover states with rgba background transitions
+- All CSS classes in dyd-ui/src/index.css
+
 ### File List
+
+- dyd-ui/src/index.css (modified)

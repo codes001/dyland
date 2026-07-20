@@ -2,7 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { usePillStore } from "../stores/pill-store";
 import { useActivityStore } from "../stores/activity-store";
-import type { IpcEnvelope } from "@types/index";
+import { useMediaStore } from "../stores/media-store";
+import { useNotificationStore } from "../stores/notification-store";
+import type { IpcEnvelope, NotificationPayload } from "../../../types/src/index";
 
 type ConnectionCallback = (status: ConnectionStatus) => void;
 
@@ -83,10 +85,44 @@ class IpcClient {
         useActivityStore.getState().clear();
         break;
       }
+      case "NotificationReceived": {
+        const p = envelope.payload as NotificationPayload;
+        if (p?.app_name) {
+          useNotificationStore.getState().setNotification(p);
+        }
+        break;
+      }
       case "DndChanged": {
         break;
       }
       case "ConfigChanged": {
+        break;
+      }
+      case "MediaChanged": {
+        const p = envelope.payload as {
+          player: string;
+          title: string;
+          artist: string;
+          album: string;
+          art_url: string | null;
+          length: number;
+          position: number;
+          playback_status: string;
+        };
+        if (p?.playback_status === "stopped" || (!p?.title && !p?.artist) || !p?.player) {
+          useMediaStore.getState().clearMedia();
+        } else {
+          useMediaStore.getState().setMedia({
+            player: p.player,
+            title: p.title,
+            artist: p.artist,
+            album: p.album,
+            artUrl: p.art_url,
+            length: p.length,
+            position: p.position,
+            playbackStatus: p.playback_status,
+          });
+        }
         break;
       }
     }

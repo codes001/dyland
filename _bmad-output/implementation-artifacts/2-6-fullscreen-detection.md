@@ -1,6 +1,6 @@
 # Story 2.6: Fullscreen Detection
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -73,4 +73,20 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Created `dyd-daemon/src/sources/fullscreen.rs` with FullscreenState (AtomicBool + AtomicU32 monitor count)
+- poll_fullscreen function polls GNOME Shell Introspect D-Bus API every 2s for fullscreen windows
+- Uses zwlr_foreign_toplevel_management fallback path for wlroots compositors
+- Tracks fullscreen count per monitor via AtomicU32
+- Updated `dyd-daemon/src/lib.rs` to start fullscreen poller in run(), pass watch channel
+- Updated `dyd-daemon/src/sources/mod.rs` (new module declaration)
+- UI: usePillStore.handleFullscreenChange drives hidden state transitions
+- IPC: FullscreenChanged event forwarded from daemon → Tauri → UI ipcClient → pillStore
+- Manual override slot in config (not yet wired to settings UI)
+
 ### File List
+
+- dyd-daemon/src/sources/mod.rs (new)
+- dyd-daemon/src/sources/fullscreen.rs (new)
+- dyd-daemon/src/lib.rs (modified)
+- dyd-ui/src/stores/pill-store.ts (modified)
+- dyd-ui/src/ipc/client.ts (modified)

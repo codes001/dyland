@@ -1,6 +1,6 @@
 # Story 2.1: State Machine
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -74,4 +74,16 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Created `dyd-ui/src/types/pill.ts` with PillState type, transition table, STATE_RULES map
+- Created `dyd-ui/src/config/animation.ts` with spring constants, durations, PILL_SIZE config
+- Created `dyd-ui/src/stores/pill-store.ts` with Zustand store: transitionTo(), handleFullscreenChange(), resetIdleTimer(), cleanup()
+- Updated `dyd-ui/src/components/Pill.tsx` with motion.div, AnimatePresence, state-driven rendering
+- Implemented all 4 state machine tasks: state definitions, deterministic transitions, interruptible animations (via motion AnimatePresence), idle timeout (4s configurable)
+- Hidden state wired to fullscreen detection
+
 ### File List
+
+- dyd-ui/src/types/pill.ts (new)
+- dyd-ui/src/config/animation.ts (new)
+- dyd-ui/src/stores/pill-store.ts (new)
+- dyd-ui/src/components/Pill.tsx (modified)

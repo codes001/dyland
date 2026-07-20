@@ -1,6 +1,6 @@
 # Story 2.3: Gesture Handling
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -83,4 +83,16 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Created `dyd-ui/src/hooks/useGestureHandler.ts` with click/swipe/long-press gesture recognizer state machine
+- Gesture conflict resolution: PENDING→SWIPE (move>10px), PENDING→LONG_PRESS (500ms timeout), PENDING→CLICK (pointerUp<300ms)
+- First recognizer to match cancels others
+- Swipe rubber-banding: offset = threshold + (distance - threshold) * 0.3
+- Dormant state has pointer-events: none (input passthrough)
+- Pill wired to gesture handler in Pill.tsx
+- Created `dyd-ui/src/components/ContextMenu.tsx` with AnimatePresence, floating above pill
+
 ### File List
+
+- dyd-ui/src/hooks/useGestureHandler.ts (new)
+- dyd-ui/src/components/Pill.tsx (modified)
+- dyd-ui/src/components/ContextMenu.tsx (new)

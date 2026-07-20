@@ -38,3 +38,18 @@ body,
   outline: 1px solid rgba(255, 255, 255, 0.5);
   outline-offset: 1px;
 }
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee {
+  display: flex;
+  width: fit-content;
+  animation: marquee 10s linear infinite;
+}
+
+.marquee:hover {
+  animation-play-state: paused;
+}

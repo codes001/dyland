@@ -11,9 +11,9 @@ status_definitions:
 
 development_status:
   epic-1: "review"
-  epic-2: "in-progress"
-  epic-3: "backlog"
-  epic-4: "backlog"
+  epic-2: "review"
+  epic-3: "review"
+  epic-4: "in-progress"
   epic-5: "backlog"
   epic-6: "backlog"
   epic-7: "backlog"
@@ -29,11 +29,21 @@ development_status:
   1-6-session-management: "review"
 
   # Epic 2 - The Pill: Rendering & Interaction
-  2-1-state-machine: "in-progress"
-  2-2-smooth-animations: "backlog"
-  2-3-gesture-handling: "backlog"
-  2-4-activity-queue: "backlog"
-  2-5-hover-focus: "backlog"
-  2-6-fullscreen-detection: "backlog"
+  2-1-state-machine: "review"
+  2-2-smooth-animations: "review"
+  2-3-gesture-handling: "review"
+  2-4-activity-queue: "review"
+  2-5-hover-focus: "review"
+  2-6-fullscreen-detection: "review"
 
-last_updated: "2026-07-19"
+  # Epic 3 - Media Integration
+  3-1-mpris-source: "review"
+  3-2-media-info-display: "review"
+  3-3-media-playback-controls: "review"
+  3-4-album-art: "review"
+  3-5-multi-player-handling: "review"
+
+  # Epic 4 - Notification Interception
+  4-1-notification-source: "review"
+
+last_updated: "2026-07-20"

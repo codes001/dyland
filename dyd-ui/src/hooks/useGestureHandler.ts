@@ -61,7 +61,7 @@ export function useGestureHandler({
               ? dy
               : swipeThreshold + (dy - swipeThreshold) * 0.3
             : dy * 0.3;
-          e.currentTarget.style.transform = `translateX(-50%) translateY(${clamped}px)`;
+          (e.currentTarget as HTMLElement).style.transform = `translateX(-50%) translateY(${clamped}px)`;
         }
       };
 
@@ -77,7 +77,7 @@ export function useGestureHandler({
         const velocity = Math.abs(dy) / (dt || 1) * 1000;
 
         if (recognizer.current === "swipe") {
-          e.currentTarget.style.transform = "";
+          (e.currentTarget as HTMLElement).style.transform = "";
           if (dy > swipeThreshold || velocity > swipeVelocityThreshold) {
             onSwipe?.("down");
           }

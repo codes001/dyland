@@ -9,6 +9,8 @@ pub use health::HealthCheck;
 pub use lifecycle::DaemonState;
 
 use sources::fullscreen::{poll_fullscreen, FullscreenState};
+use sources::media::MediaSource;
+use sources::notifications::NotificationSource;
 
 use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
@@ -17,8 +19,6 @@ use tokio::sync::watch;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing_subscriber::EnvFilter;
-
-
 
 static LOG_INIT: OnceLock<()> = OnceLock::new();
 
@@ -35,6 +35,8 @@ pub struct Daemon {
     fullscreen_tx: watch::Sender<bool>,
     fullscreen_rx: watch::Receiver<bool>,
     activity_queue: Arc<tokio::sync::Mutex<queue::ActivityQueue>>,
+    media_source: Option<Arc<MediaSource>>,
+    notification_source: Option<Arc<NotificationSource>>,
 }
 
 impl Daemon {
@@ -59,6 +61,8 @@ impl Daemon {
             fullscreen_tx,
             fullscreen_rx,
             activity_queue,
+            media_source: None,
+            notification_source: None,
         }
     }
 
@@ -67,8 +71,12 @@ impl Daemon {
         tracing::info!(pid = std::process::id(), "dyd-daemon starting");
 
         self.connect_dbus().await;
+        self.init_media_source().await;
+        self.init_notification_source().await;
         self.start_ipc_server().await;
         self.start_fullscreen_poller().await;
+        self.start_media_poller().await;
+        self.start_notification_listener().await;
         self.state = DaemonState::Running;
         self.health.set_ready();
         self.start_time = tokio::time::Instant::now();
@@ -120,14 +128,26 @@ impl Daemon {
         }
     }
 
+    async fn init_media_source(&mut self) {
+        let mut source = MediaSource::new();
+        if let Some(conn) = self.dbus_conn.as_ref() {
+            source.set_dbus_connection(conn.clone());
+        }
+        self.media_source = Some(Arc::new(source));
+    }
+
     async fn start_ipc_server(&mut self) {
         let health = self.health.clone();
         let clients = self.connected_clients.clone();
         let shutdown_rx = self.shutdown_rx.clone();
         let (ready_tx, ready_rx) = oneshot::channel::<()>();
+        let media_broadcast = self.media_source.as_ref().map(|m| m.event_broadcast());
+        let media_source = self.media_source.clone();
+        let notification_broadcast = self.notification_source.as_ref().map(|n| n.event_broadcast());
+        let notification_source = self.notification_source.clone();
 
         let handle = tokio::spawn(async move {
-            if let Err(e) = ipc::server::start(health, clients, shutdown_rx, ready_tx).await {
+            if let Err(e) = ipc::server::start(health, clients, shutdown_rx, ready_tx, media_broadcast, media_source, notification_broadcast, notification_source).await {
                 tracing::error!(error = %e, "IPC server failed");
             }
         });
@@ -155,6 +175,37 @@ impl Daemon {
         tracing::info!("fullscreen poller started");
     }
 
+    async fn start_media_poller(&mut self) {
+        if let Some(source) = self.media_source.as_ref() {
+            let shutdown_rx = self.shutdown_rx.clone();
+            let source = source.clone();
+            tokio::spawn(async move {
+                source.start_polling(shutdown_rx).await;
+            });
+            tracing::info!("media poller started");
+        }
+    }
+
+    async fn init_notification_source(&mut self) {
+        let mut source = NotificationSource::new();
+        if let Some(conn) = self.dbus_conn.as_ref() {
+            source.set_dbus_connection(conn.clone());
+        }
+        self.notification_source = Some(Arc::new(source));
+        tracing::info!("notification source initialized");
+    }
+
+    async fn start_notification_listener(&mut self) {
+        if let Some(source) = self.notification_source.as_ref() {
+            let shutdown_rx = self.shutdown_rx.clone();
+            let source = source.clone();
+            tokio::spawn(async move {
+                source.start_listening(shutdown_rx).await;
+            });
+            tracing::info!("notification listener started");
+        }
+    }
+
     pub fn activity_queue(&self) -> Arc<tokio::sync::Mutex<queue::ActivityQueue>> {
         self.activity_queue.clone()
     }
@@ -165,6 +216,14 @@ impl Daemon {
 
     pub fn fullscreen_state_ref(&self) -> Arc<FullscreenState> {
         self.fullscreen_state.clone()
+    }
+
+    pub fn media_source_ref(&self) -> Option<Arc<MediaSource>> {
+        self.media_source.clone()
+    }
+
+    pub fn notification_source_ref(&self) -> Option<Arc<NotificationSource>> {
+        self.notification_source.clone()
     }
 
     async fn shutdown(&mut self) {

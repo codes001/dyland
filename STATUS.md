@@ -9,8 +9,8 @@
 | Epic | Status | Stories |
 |------|--------|---------|
 | **1. Foundation & Core Infrastructure** | **review** | 6/6 stories implemented (awaiting review) |
-| **2. Pill — Rendering & Interaction** | **in-progress** | 1/6 stories ready for dev |
-| **3. Media Integration** | **backlog** | Not started |
+| **2. Pill — Rendering & Interaction** | **review** | 6/6 stories implemented (awaiting review) |
+| **3. Media Integration** | **review** | 5/5 stories implemented (awaiting review) |
 | **4. Notification Interception** | **backlog** | Not started |
 | **5. System Status Indicators** | **backlog** | Not started |
 | **6. Plugin System** | **backlog** | Not started |
@@ -18,7 +18,7 @@
 | **8. Polish & Performance** | **backlog** | Not started |
 | **9. Distribution** | **backlog** | Not started |
 
-**Overall:** 6 of 54 stories implemented (11%). Epic 1 in review. Epic 2 stories created, 1 ready for dev.
+**Overall:** 17 of 54 stories implemented (31%). Epics 1-3 in review.
 
 ---
 
@@ -41,12 +41,12 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 | Story | Status | What |
 |-------|--------|------|
-| 2.1 | **ready-for-dev** | State Machine (dormant/active/expanded/hidden, transitions, interruptible animations, auto-dismiss) |
-| 2.2 | **ready-for-dev** | Smooth Animations (spring sizes, content entry/exit, blur, 60fps) |
-| 2.3 | **ready-for-dev** | Gesture Handling (click, swipe, long-press, conflict resolution) |
-| 2.4 | **ready-for-dev** | Multi-Activity Queue (data structure, cycling, prioritization, persistence) |
-| 2.5 | **ready-for-dev** | Hover & Focus States (glow, keyboard outline, expanded hover) |
-| 2.6 | **ready-for-dev** | Fullscreen Detection (Wayland detection, restoration, manual override) |
+| 2.1 | **review** | State Machine — Zustand store, transition logic, idle timeout, hidden state |
+| 2.2 | **review** | Smooth Animations — motion.div spring animations, content transitions, blur backdrop |
+| 2.3 | **review** | Gesture Handling — click/swipe/long-press with conflict resolution via pointer events |
+| 2.4 | **review** | Activity Queue — daemon BinaryHeap queue + UI Zustand store + IPC wiring |
+| 2.5 | **review** | Hover & Focus — CSS hover glow, :focus-visible keyboard outline, hover on expanded content |
+| 2.6 | **review** | Fullscreen Detection — GNOME D-Bus polling, hidden state, monitor-aware, config override |
 
 ---
 
@@ -54,11 +54,11 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 | Story | Status | What |
 |-------|--------|------|
-| 3.1 | **backlog** | Not started |
-| 3.2 | **backlog** | Not started |
-| 3.3 | **backlog** | Not started |
-| 3.4 | **backlog** | Not started |
-| 3.5 | **backlog** | Not started |
+| 3.1 | **review** | MPRIS Source — Daemon-side MPRIS player detection and polling via D-Bus |
+| 3.2 | **review** | Media Info Display — UI media store, MediaChanged handling, NowPlaying display |
+| 3.3 | **review** | Media Playback Controls — MPRIS command forwarding, control buttons UI |
+| 3.4 | **review** | Album Art — Fetch and display album art in ExpandedView with caching |
+| 3.5 | **review** | Multi-Player Handling — Support multiple MPRIS players with priority/cycling |
 
 ---
 

@@ -26,8 +26,6 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
-  const isInteractive = state === "active" || state === "expanded";
-
   return (
     <div
       className="flex h-screen w-screen items-start justify-center"

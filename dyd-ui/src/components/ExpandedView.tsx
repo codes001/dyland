@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
-import { SPRING, DURATION } from "../config/animation";
+import { useMediaStore } from "../stores/media-store";
+import MediaInfo from "./MediaInfo";
+import MediaControls from "./MediaControls";
+import { SPRING } from "../config/animation";
 
 export interface ExpandedViewProps {
   children: React.ReactNode;
@@ -15,10 +18,17 @@ function supportsBackdropBlur(): boolean {
 export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
   const state = usePillStore((s) => s.state);
   const transitionTo = usePillStore((s) => s.transitionTo);
+  const media = useMediaStore((s) => s.media);
   const ref = useRef<HTMLDivElement>(null);
 
   const isVisible = state === "expanded";
   const hasBlur = supportsBackdropBlur();
+
+  useEffect(() => {
+    if (media?.playbackStatus === "playing" && state === "active") {
+      transitionTo("expanded");
+    }
+  }, [media?.playbackStatus, state, transitionTo]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -68,6 +78,8 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
       }}
     >
       {children}
+      <MediaInfo />
+      <MediaControls />
     </motion.div>
   );
 }

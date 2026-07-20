@@ -3,7 +3,6 @@ pub mod priority;
 
 use activity::Activity;
 use std::collections::BinaryHeap;
-use std::path::PathBuf;
 use uuid::Uuid;
 
 const MAX_CAPACITY: usize = 20;

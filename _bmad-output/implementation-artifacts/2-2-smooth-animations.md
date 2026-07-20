@@ -1,6 +1,6 @@
 # Story 2.2: Smooth Animations
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -76,4 +76,15 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+- Implemented spring-based size transitions in Pill.tsx with SPRING.apple config (stiffness:350, damping:25, mass:0.8)
+- Content entry/exit animations via AnimatePresence mode="popLayout" with slide+fade
+- Background blur on ExpandedView with backdrop-filter fallback detection
+- Animation uses only transform/opacity with will-change for GPU compositing
+- Animation constants centralized in config/animation.ts
+- Created dyd-ui/src/components/ExpandedView.tsx with blur, Escape-to-close, click-outside handling
+
 ### File List
+
+- dyd-ui/src/config/animation.ts (new)
+- dyd-ui/src/components/Pill.tsx (modified)
+- dyd-ui/src/components/ExpandedView.tsx (new)

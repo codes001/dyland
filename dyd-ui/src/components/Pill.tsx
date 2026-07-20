@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
-import { PILL_SIZE, SPRING, DURATION, EASE, IDLE_TIMEOUT } from "../config/animation";
+import { PILL_SIZE, SPRING, DURATION, EASE } from "../config/animation";
 import { useGestureHandler } from "../hooks/useGestureHandler";
 import type { PillState } from "../types/pill";
 

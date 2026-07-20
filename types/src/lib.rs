@@ -29,8 +29,9 @@ pub enum IpcCommand {
     MediaPlayPause { player: String },
     MediaNext { player: String },
     MediaPrevious { player: String },
-    MediaSeek { player: String, position_us: u64 },
+    MediaSeek { player: String, position_us: i64 },
     MediaSetVolume { player: String, volume: f64 },
+    CyclePlayer { player: Option<String> },
     NotificationAction { id: u32, action_key: String, reply_text: Option<String> },
     NotificationClose { id: u32 },
     SetDnd { enabled: bool },
@@ -122,6 +123,12 @@ pub struct MediaChangedPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationActionItem {
+    pub key: String,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationPayload {
     pub id: u32,
     pub app_name: String,
@@ -129,6 +136,7 @@ pub struct NotificationPayload {
     pub summary: String,
     pub body: Option<String>,
     pub urgency: String,
+    pub actions: Vec<NotificationActionItem>,
     pub timestamp: f64,
 }
 

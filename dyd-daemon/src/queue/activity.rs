@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::time::Instant;
 use uuid::Uuid;
