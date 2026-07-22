@@ -1,6 +1,6 @@
 # Story 4.1: Notification Source (Daemon-side)
 
-Status: review
+Status: done
 
 ## Story
 

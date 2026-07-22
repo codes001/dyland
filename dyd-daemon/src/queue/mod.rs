@@ -29,7 +29,7 @@ impl ActivityQueue {
                     tracing::warn!(id = %lowest_id, "queue full, evicted lowest priority activity");
                 } else {
                     tracing::warn!(id = %activity.id, "queue full, dropped new activity");
-                    return;
+                    return;     
                 }
             }
         }
