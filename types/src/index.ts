@@ -3,6 +3,10 @@ export type IpcEvent =
   | { type: "MediaChanged"; payload: MediaChangedPayload }
   | { type: "NotificationReceived"; payload: NotificationPayload }
   | { type: "BatteryChanged"; payload: BatteryPayload }
+  | { type: "WifiChanged"; payload: WifiPayload }
+  | { type: "BluetoothChanged"; payload: BluetoothPayload }
+  | { type: "VolumeChanged"; payload: VolumePayload }
+  | { type: "BrightnessChanged"; payload: BrightnessPayload }
   | { type: "ConnectionStatus"; payload: ConnectionStatusPayload }
   | { type: "ActivityQueued"; payload: ActivityPayload }
   | { type: "ActivityDequeued"; payload: ActivityPayload }
@@ -82,6 +86,41 @@ export interface BatteryPayload {
   time_to_empty: number | null;
   time_to_full: number | null;
   is_present: boolean;
+  health: number | null;
+}
+
+export interface WifiPayload {
+  ssid: string | null;
+  strength: number;
+  state: string;
+  ip_address: string | null;
+  frequency_mhz: number | null;
+  security: string | null;
+}
+
+export interface BluetoothDevice {
+  name: string;
+  connected: boolean;
+  icon: string | null;
+  address: string;
+}
+
+export interface BluetoothPayload {
+  powered: boolean;
+  discoverable: boolean;
+  present: boolean;
+  devices: BluetoothDevice[];
+}
+
+export interface VolumePayload {
+  volume: number;
+  muted: boolean;
+  sink_name: string | null;
+}
+
+export interface BrightnessPayload {
+  brightness: number;
+  has_backlight: boolean;
 }
 
 export interface ConnectionStatusPayload {

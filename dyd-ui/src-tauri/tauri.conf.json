@@ -17,9 +17,9 @@
         "height": 100,
         "decorations": false,
         "transparent": true,
-        "always_on_top": true,
+        "alwaysOnTop": true,
         "focus": false,
-        "skip_taskbar": true,
+        "skipTaskbar": true,
         "resizable": false,
         "center": false
       }

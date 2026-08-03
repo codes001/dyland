@@ -14,7 +14,7 @@ development_status:
   epic-2: "review"
   epic-3: "review"
   epic-4: "in-progress"
-  epic-5: "backlog"
+  epic-5: "done"
   epic-6: "backlog"
   epic-7: "backlog"
   epic-8: "backlog"
@@ -46,4 +46,12 @@ development_status:
   # Epic 4 - Notification Interception
   4-1-notification-source: "done"
 
-last_updated: "2026-07-20"
+  # Epic 5 - System Status Indicators
+  5-1-battery-monitoring: "done"
+  5-2-wifi-status: "done"
+  5-3-bluetooth-status: "done"
+  5-4-volume-control: "done"
+  5-5-brightness-control: "done"
+  5-6-status-icon-row: "done"
+
+last_updated: "2026-08-03"

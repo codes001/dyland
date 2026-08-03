@@ -1,13 +1,12 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 use tokio::sync::{broadcast, mpsc, watch};
 
-use dyd_types::{IpcCommand, IpcEnvelope, IpcEvent};
+use super::context::SourceContext;
 use crate::health::HealthCheck;
-use crate::sources::media::MediaSource;
-use crate::sources::notifications::NotificationSource;
+use dyd_types::{IpcCommand, IpcEnvelope, IpcEvent};
 
 struct ClientGuard {
     counter: Arc<AtomicU32>,
@@ -26,7 +25,10 @@ impl Drop for ClientGuard {
     }
 }
 
-fn spawn_broadcast_forwarder(mut rx: broadcast::Receiver<IpcEnvelope>, event_tx: mpsc::Sender<IpcEnvelope>) {
+fn spawn_broadcast_forwarder(
+    mut rx: broadcast::Receiver<IpcEnvelope>,
+    event_tx: mpsc::Sender<IpcEnvelope>,
+) {
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
@@ -49,10 +51,7 @@ pub async fn handle_connection(
     health: Arc<HealthCheck>,
     connected_clients: Arc<AtomicU32>,
     mut shutdown_rx: watch::Receiver<()>,
-    media_broadcast_rx: Option<broadcast::Receiver<IpcEnvelope>>,
-    notification_broadcast_rx: Option<broadcast::Receiver<IpcEnvelope>>,
-    media_source: Option<Arc<MediaSource>>,
-    notification_source: Option<Arc<NotificationSource>>,
+    ctx: SourceContext,
 ) {
     let (reader, mut writer) = stream.into_split();
     let mut buf_reader = BufReader::new(reader);
@@ -60,10 +59,7 @@ pub async fn handle_connection(
     let _guard = ClientGuard::new(connected_clients);
 
     let (event_tx, mut event_rx) = mpsc::channel::<IpcEnvelope>(64);
-    if let Some(broadcast_rx) = media_broadcast_rx {
-        spawn_broadcast_forwarder(broadcast_rx, event_tx.clone());
-    }
-    if let Some(broadcast_rx) = notification_broadcast_rx {
+    for broadcast_rx in ctx.broadcast_receivers() {
         spawn_broadcast_forwarder(broadcast_rx, event_tx.clone());
     }
 
@@ -79,7 +75,7 @@ pub async fn handle_connection(
                     Ok(_) => {
                         match IpcEnvelope::deserialize(line.trim().as_bytes()) {
                             Ok(envelope) => {
-                                let response = handle_envelope(envelope, health.as_ref(), &media_source, &notification_source).await;
+                                let response = handle_envelope(envelope, health.as_ref(), &ctx).await;
                                 if let Some(resp) = response {
                                     if writer.write_all(&resp.serialize()).await.is_err() {
                                         break;
@@ -110,14 +106,25 @@ pub async fn handle_connection(
     }
 }
 
-async fn handle_envelope(envelope: IpcEnvelope, health: &HealthCheck, media_source: &Option<Arc<MediaSource>>, notification_source: &Option<Arc<NotificationSource>>) -> Option<IpcEnvelope> {
+async fn handle_envelope(
+    envelope: IpcEnvelope,
+    health: &HealthCheck,
+    ctx: &SourceContext,
+) -> Option<IpcEnvelope> {
     match envelope.payload {
-        dyd_types::IpcPayload::Command(cmd) => handle_command(envelope.id, cmd, health, media_source, notification_source).await,
+        dyd_types::IpcPayload::Command(cmd) => handle_command(envelope.id, cmd, health, ctx).await,
         dyd_types::IpcPayload::Event(_) => None,
     }
 }
 
-async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, media_source: &Option<Arc<MediaSource>>, notification_source: &Option<Arc<NotificationSource>>) -> Option<IpcEnvelope> {
+async fn handle_command(
+    id: uuid::Uuid,
+    cmd: IpcCommand,
+    health: &HealthCheck,
+    ctx: &SourceContext,
+) -> Option<IpcEnvelope> {
+    let media_source = &ctx.media_source;
+    let notification_source = &ctx.notification_source;
     let mut envelope = match cmd {
         IpcCommand::Ping => {
             let status = health.status();
@@ -130,15 +137,17 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
         }
         IpcCommand::GetState => {
             let status = health.status();
-            IpcEnvelope::event(IpcEvent::ConnectionStatus(dyd_types::ConnectionStatusPayload {
-                status: format!("ok:uptime={}", status.uptime_secs),
-            }))
-        }
-        IpcCommand::CycleNext | IpcCommand::CyclePrev => {
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:queued".to_string() }
+                dyd_types::ConnectionStatusPayload {
+                    status: format!("ok:uptime={}", status.uptime_secs),
+                },
             ))
         }
+        IpcCommand::CycleNext | IpcCommand::CyclePrev => IpcEnvelope::event(
+            IpcEvent::ConnectionStatus(dyd_types::ConnectionStatusPayload {
+                status: "ok:queued".to_string(),
+            }),
+        ),
         IpcCommand::DismissActivity { activity_id: _ } => {
             IpcEnvelope::event(IpcEvent::QueueEmptied)
         }
@@ -151,11 +160,15 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     }
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:media_command".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
@@ -168,11 +181,15 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     }
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:media_command".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
@@ -185,15 +202,22 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     }
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:media_command".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
-        IpcCommand::MediaSeek { ref player, position_us } => {
+        IpcCommand::MediaSeek {
+            ref player,
+            position_us,
+        } => {
             if let Some(source) = media_source.clone() {
                 let p = player.clone();
                 tokio::spawn(async move {
@@ -202,16 +226,24 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     }
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:media_command".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
         IpcCommand::MediaSetVolume { ref player, volume } => {
-            let volume = if volume.is_finite() { volume.clamp(0.0, 1.0) } else { 0.0 };
+            let volume = if volume.is_finite() {
+                volume.clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
             if let Some(source) = media_source.clone() {
                 let p = player.clone();
                 tokio::spawn(async move {
@@ -220,11 +252,15 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     }
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:media_command".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:media_command".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
@@ -234,15 +270,23 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                     source.cycle_player().await;
                 });
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "ok:player_cycled".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:player_cycled".to_string(),
+                    },
                 ))
             } else {
                 IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                    dyd_types::ConnectionStatusPayload { status: "error:no_media_source".to_string() }
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_media_source".to_string(),
+                    },
                 ))
             }
         }
-        IpcCommand::NotificationAction { id, ref action_key, reply_text: _ } => {
+        IpcCommand::NotificationAction {
+            id,
+            ref action_key,
+            reply_text: _,
+        } => {
             let action_key = action_key.clone();
             if let Some(source) = notification_source.clone() {
                 tokio::spawn(async move {
@@ -254,7 +298,9 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                 tracing::debug!(id, action_key = %action_key, "no notification source for action");
             }
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:notification_action".to_string() }
+                dyd_types::ConnectionStatusPayload {
+                    status: "ok:notification_action".to_string(),
+                },
             ))
         }
         IpcCommand::NotificationClose { id } => {
@@ -268,36 +314,114 @@ async fn handle_command(id: uuid::Uuid, cmd: IpcCommand, health: &HealthCheck, m
                 tracing::debug!(id, "no notification source for close");
             }
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:notification_close".to_string() }
+                dyd_types::ConnectionStatusPayload {
+                    status: "ok:notification_close".to_string(),
+                },
             ))
         }
         IpcCommand::SetDnd { enabled } => {
             IpcEnvelope::event(IpcEvent::DndChanged(dyd_types::DndPayload { enabled }))
         }
-        IpcCommand::SetVolume { .. } | IpcCommand::SetMute { .. } => {
+        IpcCommand::SetVolume { volume } => {
+            let volume = if volume.is_finite() {
+                volume.clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            if let Some(source) = ctx.volume_source.clone() {
+                tokio::spawn(async move {
+                    if let Err(e) = source.set_volume(volume).await {
+                        tracing::warn!(error = %e, volume = %volume, command = "SetVolume", "volume command failed");
+                    }
+                });
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:volume".to_string(),
+                    },
+                ))
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_volume_source".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::SetMute { muted } => {
+            if let Some(source) = ctx.volume_source.clone() {
+                tokio::spawn(async move {
+                    if let Err(e) = source.set_mute(muted).await {
+                        tracing::warn!(error = %e, muted = %muted, command = "SetMute", "mute command failed");
+                    }
+                });
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:volume".to_string(),
+                    },
+                ))
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_volume_source".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::SetBrightness { brightness } => {
+            let brightness = if brightness.is_finite() {
+                brightness.clamp(0.0, 100.0)
+            } else {
+                0.0
+            } as u8;
+            if let Some(source) = ctx.brightness_source.clone() {
+                tokio::spawn(async move {
+                    if let Err(e) = source.set_brightness(brightness).await {
+                        tracing::warn!(error = %e, brightness = %brightness, command = "SetBrightness", "brightness command failed");
+                    }
+                });
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "ok:brightness".to_string(),
+                    },
+                ))
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_brightness_source".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::SetBluetoothPowered { powered } => {
+            if let Some(source) = ctx.bluetooth_source.clone() {
+                tokio::spawn(async move {
+                    if let Err(e) = source.set_powered(powered).await {
+                        tracing::warn!(error = %e, powered = %powered, "bluetooth powered set failed");
+                    }
+                });
+            } else {
+                tracing::debug!("no bluetooth source for set powered");
+                return Some(IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_bluetooth_source".to_string(),
+                    },
+                )));
+            }
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:volume".to_string() }
+                dyd_types::ConnectionStatusPayload {
+                    status: "ok:bluetooth".to_string(),
+                },
             ))
         }
-        IpcCommand::SetBrightness { .. } => {
-            IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:brightness".to_string() }
-            ))
-        }
-        IpcCommand::SetBluetoothPowered { .. } => {
-            IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:bluetooth".to_string() }
-            ))
-        }
-        IpcCommand::GetConfig => {
-            IpcEnvelope::event(IpcEvent::ConnectionStatus(
-                dyd_types::ConnectionStatusPayload { status: "ok:config_not_implemented".to_string() }
-            ))
-        }
+        IpcCommand::GetConfig => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+            dyd_types::ConnectionStatusPayload {
+                status: "ok:config_not_implemented".to_string(),
+            },
+        )),
         IpcCommand::UpdateConfig { changes: _ } => {
-            IpcEnvelope::event(IpcEvent::ConfigChanged(
-                dyd_types::ConfigChangedPayload { changes: serde_json::json!({"status": "ok"}) }
-            ))
+            IpcEnvelope::event(IpcEvent::ConfigChanged(dyd_types::ConfigChangedPayload {
+                changes: serde_json::json!({"status": "ok"}),
+            }))
         }
     };
     envelope.id = id;

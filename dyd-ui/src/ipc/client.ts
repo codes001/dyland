@@ -4,7 +4,16 @@ import { usePillStore } from "../stores/pill-store";
 import { useActivityStore } from "../stores/activity-store";
 import { useMediaStore } from "../stores/media-store";
 import { useNotificationStore } from "../stores/notification-store";
-import type { IpcEnvelope, NotificationPayload } from "../../../types/src/index";
+import { useSystemStore } from "../stores/system-store";
+import type {
+  BatteryPayload,
+  BluetoothPayload,
+  BrightnessPayload,
+  IpcEnvelope,
+  NotificationPayload,
+  VolumePayload,
+  WifiPayload,
+} from "../../../types/src/index";
 
 type ConnectionCallback = (status: ConnectionStatus) => void;
 
@@ -12,6 +21,7 @@ export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "re
 
 const RECONNECT_INTERVAL = 2000;
 const MAX_RECONNECT_DELAY = 30000;
+const NOTIFICATION_DISMISS_MS = 5000;
 
 class IpcClient {
   private reconnectAttempt = 0;
@@ -20,6 +30,7 @@ class IpcClient {
   private status: ConnectionStatus = "disconnected";
   private unlistenMsg: UnlistenFn | null = null;
   private unlistenStatus: UnlistenFn | null = null;
+  private notificationTimer: ReturnType<typeof setTimeout> | null = null;
 
   async connect() {
     if (this.status === "connected" || this.status === "connecting") return;
@@ -89,6 +100,45 @@ class IpcClient {
         const p = envelope.payload as NotificationPayload;
         if (p?.app_name) {
           useNotificationStore.getState().setNotification(p);
+          if (this.notificationTimer) clearTimeout(this.notificationTimer);
+          this.notificationTimer = setTimeout(() => {
+            useNotificationStore.getState().clearNotification();
+          }, NOTIFICATION_DISMISS_MS);
+        }
+        break;
+      }
+      case "BatteryChanged": {
+        const p = envelope.payload as BatteryPayload;
+        if (p && typeof p.is_present === "boolean") {
+          useSystemStore.getState().setBattery(p);
+        }
+        break;
+      }
+      case "WifiChanged": {
+        const p = envelope.payload as WifiPayload;
+        if (p && typeof p.state === "string") {
+          useSystemStore.getState().setWifi(p);
+        }
+        break;
+      }
+      case "BluetoothChanged": {
+        const p = envelope.payload as BluetoothPayload;
+        if (p && typeof p.powered === "boolean") {
+          useSystemStore.getState().setBluetooth(p);
+        }
+        break;
+      }
+      case "VolumeChanged": {
+        const p = envelope.payload as VolumePayload;
+        if (p && typeof p.volume === "number") {
+          useSystemStore.getState().setVolume(p);
+        }
+        break;
+      }
+      case "BrightnessChanged": {
+        const p = envelope.payload as BrightnessPayload;
+        if (p && typeof p.has_backlight === "boolean") {
+          useSystemStore.getState().setBrightness(p);
         }
         break;
       }

@@ -29,7 +29,7 @@ async fn connect_daemon(
     state: tauri::State<'_, Mutex<DaemonClient>>,
 ) -> Result<String, String> {
     let (writer_tx, mut writer_rx) = tokio::sync::mpsc::channel::<IpcEnvelope>(64);
-    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
 
     {
         let mut client = state.lock().map_err(|e| e.to_string())?;
@@ -92,15 +92,16 @@ async fn send_command(
     command: String,
     state: tauri::State<'_, Mutex<DaemonClient>>,
 ) -> Result<(), String> {
-    let client = state.lock().map_err(|e| e.to_string())?;
-    match &client.writer {
-        Some(tx) => {
-            let cmd: IpcCommand = serde_json::from_str(&command).map_err(|e| e.to_string())?;
-            let envelope = IpcEnvelope::command(cmd);
-            tx.send(envelope).await.map_err(|e| e.to_string())
-        }
-        None => Err("not connected".to_string()),
-    }
+    let tx = {
+        let client = state.lock().map_err(|e| e.to_string())?;
+        client.writer.clone()
+    };
+    let Some(tx) = tx else {
+        return Err("not connected".to_string());
+    };
+    let cmd: IpcCommand = serde_json::from_str(&command).map_err(|e| e.to_string())?;
+    let envelope = IpcEnvelope::command(cmd);
+    tx.send(envelope).await.map_err(|e| e.to_string())
 }
 
 pub fn run() {

@@ -8,6 +8,10 @@ pub enum IpcEvent {
     MediaChanged(MediaChangedPayload),
     NotificationReceived(NotificationPayload),
     BatteryChanged(BatteryPayload),
+    WifiChanged(WifiPayload),
+    BluetoothChanged(BluetoothPayload),
+    VolumeChanged(VolumePayload),
+    BrightnessChanged(BrightnessPayload),
     ConnectionStatus(ConnectionStatusPayload),
     ActivityQueued(ActivityPayload),
     ActivityDequeued(ActivityPayload),
@@ -147,6 +151,7 @@ pub struct BatteryPayload {
     pub time_to_empty: Option<u64>,
     pub time_to_full: Option<u64>,
     pub is_present: bool,
+    pub health: Option<f64>,
 }
 
 impl BatteryPayload {
@@ -161,6 +166,45 @@ impl BatteryPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionStatusPayload {
     pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WifiPayload {
+    pub ssid: Option<String>,
+    pub strength: u8,
+    pub state: String,
+    pub ip_address: Option<String>,
+    pub frequency_mhz: Option<u32>,
+    pub security: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BluetoothDevice {
+    pub name: String,
+    pub connected: bool,
+    pub icon: Option<String>,
+    pub address: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BluetoothPayload {
+    pub powered: bool,
+    pub discoverable: bool,
+    pub present: bool,
+    pub devices: Vec<BluetoothDevice>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VolumePayload {
+    pub volume: f64,
+    pub muted: bool,
+    pub sink_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrightnessPayload {
+    pub brightness: u8,
+    pub has_backlight: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

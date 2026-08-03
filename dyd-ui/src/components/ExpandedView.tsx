@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
 import { useMediaStore } from "../stores/media-store";
+import { useSystemStore } from "../stores/system-store";
 import MediaInfo from "./MediaInfo";
 import MediaControls from "./MediaControls";
 import { SPRING } from "../config/animation";
@@ -19,6 +20,7 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
   const state = usePillStore((s) => s.state);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const media = useMediaStore((s) => s.media);
+  const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
   const ref = useRef<HTMLDivElement>(null);
 
   const isVisible = state === "expanded";
@@ -78,8 +80,12 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
       }}
     >
       {children}
-      <MediaInfo />
-      <MediaControls />
+      {!selectedStatusFeature && (
+        <>
+          <MediaInfo />
+          <MediaControls />
+        </>
+      )}
     </motion.div>
   );
 }

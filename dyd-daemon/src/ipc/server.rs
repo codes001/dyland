@@ -1,13 +1,11 @@
-use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
+use std::sync::Arc;
 use tokio::net::UnixListener;
-use tokio::sync::{broadcast, watch, oneshot};
+use tokio::sync::{oneshot, watch};
 
 use super::connection;
+use super::context::SourceContext;
 use crate::health::HealthCheck;
-use crate::sources::media::MediaSource;
-use crate::sources::notifications::NotificationSource;
-use dyd_types::IpcEnvelope;
 
 const SOCKET_PATH: &str = "/tmp/dyd-daemon.sock";
 
@@ -16,10 +14,7 @@ pub async fn start(
     connected_clients: Arc<AtomicU32>,
     mut shutdown_rx: watch::Receiver<()>,
     ready_tx: oneshot::Sender<()>,
-    media_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
-    media_source: Option<Arc<MediaSource>>,
-    notification_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
-    notification_source: Option<Arc<NotificationSource>>,
+    sources: SourceContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let _ = std::fs::remove_file(SOCKET_PATH);
     let listener = UnixListener::bind(SOCKET_PATH)?;
@@ -39,12 +34,9 @@ pub async fn start(
                         let health = health.clone();
                         let clients = connected_clients.clone();
                         let rx = shutdown_rx.clone();
-                        let media_rx = media_broadcast.as_ref().map(|tx| tx.subscribe());
-                        let notification_rx = notification_broadcast.as_ref().map(|tx| tx.subscribe());
-                        let source = media_source.clone();
-                        let notif_source = notification_source.clone();
+                        let ctx = sources.clone();
                         tokio::spawn(async move {
-                            connection::handle_connection(stream, health, clients, rx, media_rx, notification_rx, source, notif_source).await;
+                            connection::handle_connection(stream, health, clients, rx, ctx).await;
                         });
                     }
                     Err(e) => {
