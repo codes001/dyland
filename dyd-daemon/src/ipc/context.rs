@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
+use crate::plugins::PluginManager;
 use crate::sources::battery::BatterySource;
 use crate::sources::bluetooth::BluetoothSource;
 use crate::sources::brightness::BrightnessSource;
@@ -26,6 +27,8 @@ pub struct SourceContext {
     pub bluetooth_source: Option<Arc<BluetoothSource>>,
     pub volume_source: Option<Arc<VolumeSource>>,
     pub brightness_source: Option<Arc<BrightnessSource>>,
+    pub plugin_manager: Option<Arc<PluginManager>>,
+    pub plugin_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
 }
 
 impl SourceContext {
@@ -50,6 +53,9 @@ impl SourceContext {
             receivers.push(tx.subscribe());
         }
         if let Some(tx) = &self.brightness_broadcast {
+            receivers.push(tx.subscribe());
+        }
+        if let Some(tx) = &self.plugin_broadcast {
             receivers.push(tx.subscribe());
         }
         receivers

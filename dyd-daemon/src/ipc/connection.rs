@@ -423,6 +423,138 @@ async fn handle_command(
                 changes: serde_json::json!({"status": "ok"}),
             }))
         }
+        IpcCommand::GetPlugins => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let plugins = manager.list().await;
+                let payloads: Vec<dyd_types::PluginHealthPayload> = plugins
+                    .iter()
+                    .map(crate::plugins::health_payload)
+                    .collect();
+                IpcEnvelope::event(IpcEvent::PluginList(dyd_types::PluginListPayload {
+                    plugins: payloads,
+                }))
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::GetPluginHealth { ref name } => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let name = name.clone();
+                match manager.get(&name).await {
+                    Some(h) => {
+                        let payload = crate::plugins::health_payload(&h);
+                        IpcEnvelope::event(IpcEvent::PluginChanged(payload))
+                    }
+                    None => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:plugin_not_found:{name}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::InstallPlugin { ref path } => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let path = path.clone();
+                match manager.install_plugin(std::path::Path::new(&path)).await {
+                    Ok(name) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("ok:plugin_installed:{name}"),
+                        },
+                    )),
+                    Err(e) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:plugin_install:{e}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::SetPluginEnabled { ref name, enabled } => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let name = name.clone();
+                match manager.set_enabled(&name, enabled).await {
+                    Ok(()) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("ok:plugin_enabled:{name}"),
+                        },
+                    )),
+                    Err(e) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:plugin_enabled:{e}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::UninstallPlugin { ref name } => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let name = name.clone();
+                match manager.uninstall_plugin(&name).await {
+                    Ok(()) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("ok:plugin_uninstalled:{name}"),
+                        },
+                    )),
+                    Err(e) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:plugin_uninstall:{e}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::SetPluginConfig { ref name, config } => {
+            if let Some(manager) = ctx.plugin_manager.clone() {
+                let name = name.clone();
+                match manager.set_config(&name, config).await {
+                    Ok(()) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("ok:plugin_config:{name}"),
+                        },
+                    )),
+                    Err(e) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:plugin_config:{e}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_plugin_manager".to_string(),
+                    },
+                ))
+            }
+        }
     };
     envelope.id = id;
     Some(envelope)

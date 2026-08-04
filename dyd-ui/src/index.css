@@ -58,3 +58,19 @@ body,
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+
+@keyframes dyd-critical-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
+  50% { box-shadow: 0 0 10px 2px rgba(255, 59, 48, 0.6); }
+}
+
+.dyd-notification-critical {
+  animation: dyd-critical-glow 1.6s ease-in-out infinite;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dyd-notification-critical {
+    animation: none;
+  }
+}

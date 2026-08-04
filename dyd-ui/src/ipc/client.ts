@@ -102,8 +102,18 @@ class IpcClient {
           useNotificationStore.getState().setNotification(p);
           if (this.notificationTimer) clearTimeout(this.notificationTimer);
           this.notificationTimer = setTimeout(() => {
+            if (usePillStore.getState().state === "expanded") {
+              this.notificationTimer = setTimeout(() => {
+                useNotificationStore.getState().clearNotification();
+              }, NOTIFICATION_DISMISS_MS);
+              return;
+            }
             useNotificationStore.getState().clearNotification();
           }, NOTIFICATION_DISMISS_MS);
+          const { state, isFullscreen } = usePillStore.getState();
+          if (!isFullscreen && (state === "dormant" || state === "hidden")) {
+            usePillStore.getState().transitionTo("active");
+          }
         }
         break;
       }

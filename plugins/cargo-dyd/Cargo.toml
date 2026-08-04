@@ -1,0 +1,19 @@
+[package]
+name = "cargo-dyd"
+version = "0.1.0"
+edition = "2021"
+description = "Build tooling for dyland WASM plugins (init/build/package/install)"
+license = "MIT"
+
+[[bin]]
+name = "cargo-dyd"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"

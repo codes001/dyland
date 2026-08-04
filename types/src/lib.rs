@@ -1,3 +1,7 @@
+pub mod plugin;
+
+pub use plugin::{PluginManifest, ValidationIssue, ValidationReport};
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -20,6 +24,9 @@ pub enum IpcEvent {
     FullscreenChanged(FullscreenPayload),
     DndChanged(DndPayload),
     ConfigChanged(ConfigChangedPayload),
+    PluginChanged(PluginHealthPayload),
+    PluginActivity(ActivityPayload),
+    PluginList(PluginListPayload),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +52,12 @@ pub enum IpcCommand {
     SetBluetoothPowered { powered: bool },
     GetConfig,
     UpdateConfig { changes: serde_json::Value },
+    GetPlugins,
+    GetPluginHealth { name: String },
+    InstallPlugin { path: String },
+    SetPluginEnabled { name: String, enabled: bool },
+    UninstallPlugin { name: String },
+    SetPluginConfig { name: String, config: serde_json::Value },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -228,4 +241,26 @@ pub struct DndPayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfigChangedPayload {
     pub changes: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginHealthPayload {
+    pub name: String,
+    pub version: String,
+    pub state: String,
+    pub last_error: Option<String>,
+    pub error_count: u32,
+    pub uptime_secs: u64,
+    pub memory_usage: Option<u64>,
+    pub disabled: bool,
+    pub is_core: bool,
+    pub permissions: Vec<String>,
+    pub ui_components: Vec<String>,
+    pub config_schema: Option<serde_json::Value>,
+    pub config: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginListPayload {
+    pub plugins: Vec<PluginHealthPayload>,
 }

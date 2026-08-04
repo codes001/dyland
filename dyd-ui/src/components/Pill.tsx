@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
+import { useNotificationStore } from "../stores/notification-store";
 import { PILL_SIZE, SPRING, DURATION, EASE } from "../config/animation";
 import { useGestureHandler } from "../hooks/useGestureHandler";
 import type { PillState } from "../types/pill";
@@ -11,8 +12,11 @@ export interface PillProps {
   children?: React.ReactNode;
 }
 
-function getSize(state: PillState) {
+function getSize(state: PillState, hasNotification: boolean) {
   if (state === "hidden") return { width: 0, height: 0 };
+  if (hasNotification && (state === "dormant" || state === "active")) {
+    return PILL_SIZE.notification;
+  }
   return PILL_SIZE[state] ?? PILL_SIZE.dormant;
 }
 
@@ -22,12 +26,13 @@ export default function Pill({ children }: PillProps) {
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const resetIdleTimer = usePillStore((s) => s.resetIdleTimer);
+  const hasNotification = useNotificationStore((s) => s.notification !== null);
   const setPreviousFullscreen = useRef(false);
 
   const handleClick = useCallback(() => {
-    if (state === "active") transitionTo("expanded");
+    if (state === "active" || (state === "dormant" && hasNotification)) transitionTo("expanded");
     resetIdleTimer();
-  }, [state, transitionTo, resetIdleTimer]);
+  }, [state, hasNotification, transitionTo, resetIdleTimer]);
 
   const handleSwipeDismiss = useCallback(() => {
     if (state === "expanded") {
@@ -54,8 +59,9 @@ export default function Pill({ children }: PillProps) {
     }
   }, [isFullscreen]);
 
-  const size = getSize(state);
-  const isInteractive = state === "active" || state === "expanded";
+  const size = getSize(state, hasNotification);
+  const isInteractive =
+    state === "active" || state === "expanded" || (state === "dormant" && hasNotification);
   const isHidden = state === "hidden";
 
   return (
@@ -82,7 +88,7 @@ export default function Pill({ children }: PillProps) {
       className="pill"
       style={{
         position: "fixed",
-        top: 0,
+        top: 10,
         left: "50%",
         x: "-50%",
         backgroundColor: "#000000",

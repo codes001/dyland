@@ -1,6 +1,7 @@
 pub mod health;
 pub mod ipc;
 pub mod lifecycle;
+pub mod plugins;
 pub mod queue;
 pub mod signals;
 pub mod sources;
@@ -20,10 +21,15 @@ use sources::wifi::WifiSource;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::sync::OnceLock;
+use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing_subscriber::EnvFilter;
+
+use plugins::manager::PluginManager;
+use plugins::host::{PluginExecutor, StubExecutor};
+use plugins::runtime::{HostContext, WasmExecutor};
 
 static LOG_INIT: OnceLock<()> = OnceLock::new();
 
@@ -48,6 +54,7 @@ pub struct Daemon {
     bluetooth_source: Option<Arc<BluetoothSource>>,
     volume_source: Option<Arc<VolumeSource>>,
     brightness_source: Option<Arc<BrightnessSource>>,
+    plugin_manager: Arc<PluginManager>,
 }
 
 impl Daemon {
@@ -58,6 +65,27 @@ impl Daemon {
         let (fullscreen_tx, fullscreen_rx) = watch::channel(false);
         let fullscreen_state = Arc::new(FullscreenState::new());
         let activity_queue = Arc::new(tokio::sync::Mutex::new(queue::ActivityQueue::new()));
+
+        // Build the shared host context and WASM executor. If the engine fails
+        // to initialize (should not happen), fall back to the no-op stub so the
+        // daemon still runs without plugins.
+        let (plugin_event_tx, _) = tokio::sync::broadcast::channel(64);
+        let host_ctx = Arc::new(HostContext::new(
+            plugin_event_tx.clone(),
+            tokio::runtime::Handle::current(),
+        ));
+        let executor: Arc<dyn PluginExecutor> = match WasmExecutor::new(host_ctx.clone()) {
+            Ok(exec) => Arc::new(exec),
+            Err(e) => {
+                tracing::error!(error = %e, "wasm executor init failed; plugins disabled");
+                Arc::new(StubExecutor)
+            }
+        };
+        let plugin_manager = Arc::new(PluginManager::from_parts(
+            executor,
+            plugin_event_tx,
+            host_ctx,
+        ));
 
         Self {
             state: DaemonState::Starting,
@@ -80,6 +108,7 @@ impl Daemon {
             bluetooth_source: None,
             volume_source: None,
             brightness_source: None,
+            plugin_manager,
         }
     }
 
@@ -104,6 +133,7 @@ impl Daemon {
         self.start_bluetooth_poller().await;
         self.start_volume_poller().await;
         self.start_brightness_poller().await;
+        self.init_plugins().await;
         self.state = DaemonState::Running;
         self.health.set_ready();
         self.start_time = tokio::time::Instant::now();
@@ -199,6 +229,8 @@ impl Daemon {
             bluetooth_source: self.bluetooth_source.clone(),
             volume_source: self.volume_source.clone(),
             brightness_source: self.brightness_source.clone(),
+            plugin_manager: Some(self.plugin_manager.clone()),
+            plugin_broadcast: Some(self.plugin_manager.event_broadcast()),
         };
 
         let handle = tokio::spawn(async move {
@@ -398,6 +430,47 @@ impl Daemon {
 
     pub fn brightness_source_ref(&self) -> Option<Arc<BrightnessSource>> {
         self.brightness_source.clone()
+    }
+
+    async fn init_plugins(&mut self) {
+        let loaded = self.plugin_manager.scan_plugins().await;
+        tracing::info!(count = %loaded.len(), "plugin scan complete");
+        let results = self.plugin_manager.start_all().await;
+        for result in results {
+            if let Err(e) = result {
+                tracing::warn!(error = %e, "plugin start failed");
+            }
+        }
+        self.start_plugin_ticker().await;
+    }
+
+    /// Drive periodic plugin `tick()` work on a fixed interval. All ready
+    /// plugins are batched into one blocking hop per interval (see
+    /// [`PluginManager::tick_all`]); crashes flow into the 6-2 auto-disable
+    /// path. Stops when shutdown is signalled.
+    async fn start_plugin_ticker(&mut self) {
+        let manager = self.plugin_manager.clone();
+        let mut shutdown_rx = self.shutdown_rx.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_millis(100));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        manager.tick_all().await;
+                    }
+                    _ = shutdown_rx.changed() => {
+                        tracing::info!("plugin ticker stopping");
+                        break;
+                    }
+                }
+            }
+        });
+        tracing::info!("plugin ticker started");
+    }
+
+    pub fn plugin_manager_ref(&self) -> Arc<PluginManager> {
+        self.plugin_manager.clone()
     }
 
     async fn shutdown(&mut self) {

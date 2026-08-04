@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "name": "dyd-minimal-plugin",
+  "version": "0.1.0",
+  "author": "dyland",
+  "description": "Minimal size-check fixture",
+  "entry_point": "plugin.wasm",
+  "permissions": [],
+  "ui_components": ["expanded"],
+  "dependencies": [],
+  "sdk_version": "0.1"
+}

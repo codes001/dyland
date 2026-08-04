@@ -114,8 +114,9 @@ pub fn run() {
                 None => return Ok(()),
             };
             if let Ok(Some(monitor)) = window.primary_monitor() {
-                let x = (monitor.size().width as i32 - 400) / 2;
-                let _ = window.set_position(tauri::PhysicalPosition::new(x, 0));
+                let monitor_size = monitor.size();
+                let _ = window.set_size(tauri::PhysicalSize::new(monitor_size.width, 100));
+                let _ = window.set_position(tauri::PhysicalPosition::new(0, 0));
             }
             Ok(())
         })

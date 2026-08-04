@@ -13,9 +13,9 @@ development_status:
   epic-1: "review"
   epic-2: "review"
   epic-3: "review"
-  epic-4: "in-progress"
+  epic-4: "done"
   epic-5: "done"
-  epic-6: "backlog"
+  epic-6: "in-progress"
   epic-7: "backlog"
   epic-8: "backlog"
   epic-9: "backlog"
@@ -45,6 +45,7 @@ development_status:
 
   # Epic 4 - Notification Interception
   4-1-notification-source: "done"
+  4-2-notification-rendering: "done"
 
   # Epic 5 - System Status Indicators
   5-1-battery-monitoring: "done"
@@ -53,5 +54,13 @@ development_status:
   5-4-volume-control: "done"
   5-5-brightness-control: "done"
   5-6-status-icon-row: "done"
+
+  # Epic 6 - Plugin System
+  6-1-plugin-manifest: "review"
+  6-2-plugin-lifecycle: "review"
+  6-3-wasm-runtime: "review"
+  6-4-plugin-sdk: "ready-for-dev"
+  6-5-plugin-management-ui: "ready-for-dev"
+  6-6-example-plugins: "ready-for-dev"
 
 last_updated: "2026-08-03"

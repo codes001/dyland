@@ -1,0 +1,20 @@
+[package]
+name = "dyd-plugin-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "Ergonomic no_std SDK for authoring dyland WASM plugins"
+license = "MIT"
+
+[lib]
+# rlib so host unit tests can link; cdylib is selected by plugins themselves.
+crate-type = ["rlib"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+
+# A global allocator is only needed when the crate is compiled to wasm as a
+# real (no_std) plugin. On the host (tests) std provides the allocator; the
+# `#[global_allocator]` is gated with `cfg(not(test))` in the source.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+dlmalloc = { version = "0.2", features = ["global"] }

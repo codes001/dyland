@@ -7,6 +7,8 @@ import ContextMenu from "./components/ContextMenu";
 import { ConnectionIndicator } from "./components/ConnectionIndicator";
 import StatusIconRow from "./components/status/StatusIconRow";
 import StatusExpandedView from "./components/status/StatusExpandedView";
+import PillNotificationContent from "./components/notification/PillNotificationContent";
+import NotificationExpandedView from "./components/notification/NotificationExpandedView";
 import { connectionStore } from "./stores/connection";
 import { usePillStore } from "./stores/pill-store";
 import { useActivityStore } from "./stores/activity-store";
@@ -56,7 +58,7 @@ function App() {
       }}
     >
       <Pill>
-        {state === "dormant" && !isFullscreen && (
+        {(state === "dormant" || (state === "active" && notification)) && !isFullscreen && (
           <AnimatePresence mode="popLayout">
             {!hasContent ? (
               <motion.div
@@ -76,7 +78,11 @@ function App() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15, ease: "easeIn" }}
               >
-                <span style={{ color: "white", fontSize: 12, opacity: 0.4 }}>dyd</span>
+                {notification ? (
+                  <PillNotificationContent />
+                ) : (
+                  <span style={{ color: "white", fontSize: 12, opacity: 0.4 }}>dyd</span>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -86,6 +92,8 @@ function App() {
       <ExpandedView onClose={() => transitionTo("active")}>
         {selectedStatusFeature ? (
           <StatusExpandedView />
+        ) : notification ? (
+          <NotificationExpandedView />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: "100%", minHeight: 160 }}>
             <span style={{ fontSize: 14, opacity: 0.6 }}>No activity</span>

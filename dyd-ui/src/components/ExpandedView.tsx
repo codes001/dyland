@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
 import { useMediaStore } from "../stores/media-store";
+import { useNotificationStore } from "../stores/notification-store";
 import { useSystemStore } from "../stores/system-store";
 import MediaInfo from "./MediaInfo";
 import MediaControls from "./MediaControls";
@@ -20,6 +21,7 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
   const state = usePillStore((s) => s.state);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const media = useMediaStore((s) => s.media);
+  const notification = useNotificationStore((s) => s.notification);
   const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -80,7 +82,7 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
       }}
     >
       {children}
-      {!selectedStatusFeature && (
+      {!selectedStatusFeature && !notification && (
         <>
           <MediaInfo />
           <MediaControls />

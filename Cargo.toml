@@ -4,8 +4,16 @@ members = [
     "dyd-daemon",
     "types",
     "dyd-ui/src-tauri",
+    "plugins/sdk",
+    "plugins/cargo-dyd",
 ]
 default-members = [
     "dyd-daemon",
     "types",
+    "plugins/cargo-dyd",
+]
+# The SDK targets wasm32-wasip1 and is built explicitly (or via cargo-dyd), so
+# it is intentionally excluded from default host builds/tests.
+exclude = [
+    "plugins/examples",
 ]

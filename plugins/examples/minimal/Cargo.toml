@@ -1,0 +1,18 @@
+[package]
+name = "dyd-minimal-plugin"
+version = "0.1.0"
+edition = "2021"
+description = "Minimal size-check fixture plugin for the dyd SDK"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dyd-plugin-sdk = { path = "../../sdk" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

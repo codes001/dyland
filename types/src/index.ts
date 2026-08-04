@@ -14,7 +14,10 @@ export type IpcEvent =
   | { type: "QueueEmptied" }
   | { type: "FullscreenChanged"; payload: FullscreenPayload }
   | { type: "DndChanged"; payload: DndPayload }
-  | { type: "ConfigChanged"; payload: ConfigChangedPayload };
+  | { type: "ConfigChanged"; payload: ConfigChangedPayload }
+  | { type: "PluginChanged"; payload: PluginHealthPayload }
+  | { type: "PluginActivity"; payload: ActivityPayload }
+  | { type: "PluginList"; payload: PluginListPayload };
 
 export type IpcCommand =
   | { type: "Ping" }
@@ -36,7 +39,13 @@ export type IpcCommand =
   | { type: "SetBrightness"; payload: { brightness: number } }
   | { type: "SetBluetoothPowered"; payload: { powered: boolean } }
   | { type: "GetConfig" }
-  | { type: "UpdateConfig"; payload: { changes: unknown } };
+  | { type: "UpdateConfig"; payload: { changes: unknown } }
+  | { type: "GetPlugins" }
+  | { type: "GetPluginHealth"; payload: { name: string } }
+  | { type: "InstallPlugin"; payload: { path: string } }
+  | { type: "SetPluginEnabled"; payload: { name: string; enabled: boolean } }
+  | { type: "UninstallPlugin"; payload: { name: string } }
+  | { type: "SetPluginConfig"; payload: { name: string; config: unknown } };
 
 export interface IpcEnvelope {
   id: string;
@@ -144,4 +153,24 @@ export interface DndPayload {
 
 export interface ConfigChangedPayload {
   changes: unknown;
+}
+
+export interface PluginHealthPayload {
+  name: string;
+  version: string;
+  state: string;
+  last_error: string | null;
+  error_count: number;
+  uptime_secs: number;
+  memory_usage: number | null;
+  disabled: boolean;
+  is_core: boolean;
+  permissions: string[];
+  ui_components: string[];
+  config_schema: unknown | null;
+  config: unknown | null;
+}
+
+export interface PluginListPayload {
+  plugins: PluginHealthPayload[];
 }
