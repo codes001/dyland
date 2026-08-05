@@ -15,10 +15,10 @@
 | **5. System Status Indicators** | **done** | 6/6 stories completed |
 | **6. Plugin System** | **done** | 6/6 stories completed |
 | **7. Settings & Preferences** | **done** | 5/5 stories completed |
-| **8. Polish & Performance** | **in-progress** | Beginning implementation |
-| **9. Distribution** | **backlog** | Not started |
+| **8. Polish & Performance** | **done** | 5/5 stories completed |
+| **9. Distribution** | **done** | 5/5 stories completed |
 
-**Overall:** 36 stories complete across Epics 1–7. Epic 8 (Polish & Performance) is in progress.
+**Overall:** All 46 stories complete across Epics 1–9. Project implementation complete!
 
 ---
 
@@ -116,11 +116,11 @@ Epic scoped to the monitor + rendering pair for v1; 4.3–4.5 deferred.
 
 | Story | Status | What |
 |-------|--------|------|
-| 8.1 | **in-progress** | Animation Polish (HIG springs, stagger delays, tactile scaling) |
-| 8.2 | **in-progress** | Startup Performance & Critical Path Optimization |
-| 8.3 | **in-progress** | Runtime Performance, Memory Profiling & Event Throttling |
-| 8.4 | **in-progress** | Edge Case Handling & Graceful Degradation Matrix |
-| 8.5 | **in-progress** | Visual & Interaction Polish (Icons, Spacing, System Fonts) |
+| 8.1 | **done** | Animation Polish (HIG springs, stagger delays, tactile scaling) |
+| 8.2 | **done** | Startup Performance & Critical Path Optimization |
+| 8.3 | **done** | Runtime Performance, Memory Profiling & Event Throttling |
+| 8.4 | **done** | Edge Case Handling & Graceful Degradation Matrix |
+| 8.5 | **done** | Visual & Interaction Polish (Icons, Spacing, System Fonts) |
 
 ---
 
@@ -128,11 +128,11 @@ Epic scoped to the monitor + rendering pair for v1; 4.3–4.5 deferred.
 
 | Story | Status | What |
 |-------|--------|------|
-| 9.1 | **backlog** | Not started |
-| 9.2 | **backlog** | Not started |
-| 9.3 | **backlog** | Not started |
-| 9.4 | **backlog** | Not started |
-| 9.5 | **backlog** | Not started |
+| 9.1 | **done** | Debian (.deb) Package & Desktop Integration |
+| 9.2 | **done** | Standalone AppImage Bundling Script |
+| 9.3 | **done** | CI/CD Release Automation Pipeline (.github/workflows) |
+| 9.4 | **done** | Automatic Release Update Checker (semver API) |
+| 9.5 | **done** | Comprehensive User & Developer Documentation (INSTALL, User Guide, Contributing, Architecture) |
 
 ---
 

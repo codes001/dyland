@@ -6,6 +6,7 @@ pub mod plugins;
 pub mod queue;
 pub mod signals;
 pub mod sources;
+pub mod updater;
 
 pub use health::HealthCheck;
 pub use lifecycle::DaemonState;
@@ -150,6 +151,12 @@ impl Daemon {
         self.start_volume_poller().await;
         self.start_brightness_poller().await;
         self.init_plugins().await;
+
+        let update_checker = Arc::new(updater::UpdateChecker::new(
+            env!("CARGO_PKG_VERSION"),
+            self.activity_queue.clone(),
+        ));
+        update_checker.start_periodic_check();
 
         self.state = DaemonState::Running;
         self.health.set_ready();

@@ -17,8 +17,8 @@ development_status:
   epic-5: "done"
   epic-6: "done"
   epic-7: "done"
-  epic-8: "in-progress"
-  epic-9: "backlog"
+  epic-8: "done"
+  epic-9: "done"
 
   # Epic 1 - Foundation & Core Infrastructure
   1-1-project-scaffolding: "done"
@@ -71,10 +71,17 @@ development_status:
   7-5-accessibility-settings: "done"
 
   # Epic 8 - Polish & Performance
-  8-1-animation-polish: "in-progress"
-  8-2-startup-performance: "in-progress"
-  8-3-runtime-performance: "in-progress"
-  8-4-edge-case-handling: "in-progress"
-  8-5-visual-polish: "in-progress"
+  8-1-animation-polish: "done"
+  8-2-startup-performance: "done"
+  8-3-runtime-performance: "done"
+  8-4-edge-case-handling: "done"
+  8-5-visual-polish: "done"
+
+  # Epic 9 - Distribution
+  9-1-debian-package: "done"
+  9-2-appimage-build: "done"
+  9-3-cicd-pipeline: "done"
+  9-4-auto-updater: "done"
+  9-5-user-documentation: "done"
 
 last_updated: "2026-08-05"

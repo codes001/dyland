@@ -1,0 +1,14 @@
+[Unit]
+Description=dyland Dynamic Island Daemon
+After=graphical-session.target dnd.service
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/dyd-daemon
+Restart=on-failure
+RestartSec=3s
+Environment=DYD_LOG=info
+
+[Install]
+WantedBy=default.target

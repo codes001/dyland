@@ -17,3 +17,13 @@ default-members = [
 exclude = [
     "plugins/examples",
 ]
+
+[profile.release]
+opt-level = 3
+codegen-units = 16
+lto = "thin"
+
+[profile.dev]
+opt-level = 0
+debug = 1
+
