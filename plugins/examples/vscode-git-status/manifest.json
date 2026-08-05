@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "vscode-git-status",
+  "version": "0.1.0",
+  "author": "dyland",
+  "description": "Shows the focused VS Code repo/branch/dirty state in the Dynamic Island",
+  "entry_point": "plugin.wasm",
+  "permissions": ["dbus:org.gnome.Shell.Introspect"],
+  "ui_components": ["expanded"],
+  "dependencies": [],
+  "sdk_version": "0.1",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "show_ahead_behind": {
+        "type": "boolean",
+        "title": "Show ahead/behind counts",
+        "description": "Display ↑/↓ commit counts next to the branch.",
+        "default": true
+      }
+    }
+  }
+}

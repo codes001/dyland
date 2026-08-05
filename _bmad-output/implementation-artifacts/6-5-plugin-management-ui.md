@@ -1,6 +1,6 @@
 # Story 6.5: Plugin Management UI
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,36 +24,36 @@ so that I can see what plugins are active, enable/disable/uninstall them, and co
 
 ## Tasks / Subtasks
 
-- [ ] Add plugin types to UI (AC: 1, 7)
-  - [ ] Add `PluginInfo`, `PluginHealth` interfaces in a new `dyd-ui/src/types/plugin.ts`
-  - [ ] Map status strings to badge colors (running=green, error=yellow, disabled=gray)
-- [ ] Add plugin store (AC: 1, 3, 4)
-  - [ ] Create `dyd-ui/src/stores/plugin-store.ts` (Zustand)
-  - [ ] State: `plugins: PluginInfo[]`, `selectedPlugin`, actions `setPlugins`, `setSelected`, `updatePlugin`
-  - [ ] Real-time updates from daemon `PluginChanged` events
-- [ ] Handle plugin IPC in client (AC: 1, 5, 6)
-  - [ ] Handle `PluginChanged` event in `dyd-ui/src/ipc/client.ts`
-  - [ ] Add send commands for `GetPlugins`, `SetPluginEnabled`, `UninstallPlugin`, `GetPluginHealth`, `SetPluginConfig`
-- [ ] Create PluginList component (AC: 1, 2, 4)
-  - [ ] Create `dyd-ui/src/components/settings/PluginList.tsx` — list rows with name, version, status badge
-  - [ ] Click row → detail view
-  - [ ] Empty state text + plugin count summary
-- [ ] Create PluginDetail component (AC: 2, 5, 6, 7)
-  - [ ] Create `dyd-ui/src/components/settings/PluginDetail.tsx`
-  - [ ] Enable/disable toggle
-  - [ ] Uninstall button with confirmation dialog; "This is a system plugin" warning for core
-  - [ ] Error-state actions: Disable + Reset buttons
-- [ ] Create PluginConfigForm component (AC: 8, 9, 10, 11)
-  - [ ] Create `dyd-ui/src/components/settings/PluginConfigForm.tsx`
-  - [ ] Render form fields from `config_schema`: string/number/boolean/enum/array/object
-  - [ ] Show field label + description; readOnly fields non-editable
-  - [ ] 1s debounced auto-save via `SetPluginConfig`; "Reset to defaults" button; required-field validation
-- [ ] Wire settings panel (AC: 1)
-  - [ ] Integrate plugin list/detail into an existing settings area or a new Settings view; note if settings UI does not yet exist in the app
+- [x] Add plugin types to UI (AC: 1, 7)
+  - [x] Add `PluginInfo`, `PluginHealth` interfaces in a new `dyd-ui/src/types/plugin.ts`
+  - [x] Map status strings to badge colors (running=green, error=yellow, disabled=gray)
+- [x] Add plugin store (AC: 1, 3, 4)
+  - [x] Create `dyd-ui/src/stores/plugin-store.ts` (Zustand)
+  - [x] State: `plugins: PluginInfo[]`, `selectedPlugin`, actions `setPlugins`, `setSelected`, `updatePlugin`
+  - [x] Real-time updates from daemon `PluginChanged` events
+- [x] Handle plugin IPC in client (AC: 1, 5, 6)
+  - [x] Handle `PluginChanged` event in `dyd-ui/src/ipc/client.ts`
+  - [x] Add send commands for `GetPlugins`, `SetPluginEnabled`, `UninstallPlugin`, `GetPluginHealth`, `SetPluginConfig`
+- [x] Create PluginList component (AC: 1, 2, 4)
+  - [x] Create `dyd-ui/src/components/settings/PluginList.tsx` — list rows with name, version, status badge
+  - [x] Click row → detail view
+  - [x] Empty state text + plugin count summary
+- [x] Create PluginDetail component (AC: 2, 5, 6, 7)
+  - [x] Create `dyd-ui/src/components/settings/PluginDetail.tsx`
+  - [x] Enable/disable toggle
+  - [x] Uninstall button with confirmation dialog; "This is a system plugin" warning for core
+  - [x] Error-state actions: Disable + Reset buttons
+- [x] Create PluginConfigForm component (AC: 8, 9, 10, 11)
+  - [x] Create `dyd-ui/src/components/settings/PluginConfigForm.tsx`
+  - [x] Render form fields from `config_schema`: string/number/boolean/enum/array/object
+  - [x] Show field label + description; readOnly fields non-editable
+  - [x] 1s debounced auto-save via `SetPluginConfig`; "Reset to defaults" button; required-field validation
+- [x] Wire settings panel (AC: 1)
+  - [x] Integrate plugin list/detail into an existing settings area or a new Settings view; note if settings UI does not yet exist in the app
 - Add tests (AC: 1, 8)
-  - [ ] Unit test status → badge color mapping
-  - [ ] Unit test config-schema → field descriptor generation (string/number/boolean/enum/array/object)
-  - [ ] Test debounce helper logic if isolated
+  - [x] Unit test status → badge color mapping
+  - [x] Unit test config-schema → field descriptor generation (string/number/boolean/enum/array/object)
+  - [x] Test debounce helper logic if isolated
 
 ## Dev Notes
 
@@ -86,6 +86,7 @@ so that I can see what plugins are active, enable/disable/uninstall them, and co
 ## Change Log
 
 - 2026-08-03: Initial story creation
+- 2026-08-04: Story implemented and moved to review
 
 ## Dev Agent Record
 
@@ -97,4 +98,31 @@ opencode/deepseek-v4-flash-free
 
 ### Completion Notes List
 
+1. **Minimal Settings container introduced**: The app had no settings surface. Added `Settings.tsx` — a lightweight container rendered inside the existing `ExpandedView` (opened via a new "Plugins" button in the no-activity expanded state). Full Epic-7 settings deferred, as the story allows.
+
+2. **Custom form renderer over a schema library**: `PluginConfigForm` renders string/number/boolean/enum(dropdown)/array(comma-input)/object(nested) fields directly from `config_schema`, per the epic's explicit allowance for a custom renderer. All schema→field logic lives in the pure, unit-tested `lib/plugin-config.ts` (`schemaToFields`, `defaultsFor`, `validateRequired`, `debounce`).
+
+3. **Testable pure logic split from React**: Presentation-free modules (`types/plugin.ts` badge map, `lib/plugin-config.ts`) hold all decision logic so they unit-test without a DOM. 15 tests across `tests/plugin-status.test.ts` and `tests/plugin-config.test.ts`, following the repo's existing `node:test` convention.
+
+4. **IPC bridge reuse**: Plugin commands (`GetPlugins`/`GetPluginHealth`/`SetPluginEnabled`/`UninstallPlugin`/`SetPluginConfig`) serialize typed `IpcCommand`s through the existing `send_command` Tauri bridge — no new Rust command handlers needed. `PluginList`/`PluginChanged` events feed the Zustand store for real-time status (AC3).
+
+5. **Error-state UX**: Errored plugins expose Disable + Reset (reset = re-enable) buttons and surface `last_error` + `error_count`. Uninstall requires an inline confirm; core (`is_core`) plugins show a "system plugin" warning.
+
+6. **Auto-save**: Config edits auto-save after a 1s trailing debounce; required-field validation blocks the save until satisfied; `readOnly` fields render disabled. "Reset to defaults" cancels pending saves and pushes schema defaults.
+
 ### File List
+
+**NEW:**
+- `dyd-ui/src/types/plugin.ts` — PluginInfo/PluginHealth aliases, `badgeColor`/`statusLabel`/`BADGE_HEX` status→color map
+- `dyd-ui/src/lib/plugin-config.ts` — `schemaToFields`, `defaultsFor`, `validateRequired`, `debounce` (pure logic)
+- `dyd-ui/src/stores/plugin-store.ts` — Zustand store: plugins, selectedName, setPlugins/updatePlugin/removePlugin/setSelected
+- `dyd-ui/src/components/settings/Settings.tsx` — minimal Settings container; requests plugins on mount
+- `dyd-ui/src/components/settings/PluginList.tsx` — rows (name/version/status dot), empty state, count summary
+- `dyd-ui/src/components/settings/PluginDetail.tsx` — enable/disable, error Reset, uninstall+confirm (core warning), config section
+- `dyd-ui/src/components/settings/PluginConfigForm.tsx` — schema-driven form, debounced auto-save, validation, reset
+- `dyd-ui/tests/plugin-status.test.ts` — 7 tests: badge color + status label mapping
+- `dyd-ui/tests/plugin-config.test.ts` — 8 tests: schema→fields, defaults, required validation, debounce
+
+**EDITED:**
+- `dyd-ui/src/ipc/client.ts` — handle `PluginList`/`PluginChanged`; add 5 typed plugin send helpers
+- `dyd-ui/src/App.tsx` — "Plugins" button + `Settings` overlay in the expanded view

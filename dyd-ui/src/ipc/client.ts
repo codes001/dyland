@@ -5,12 +5,15 @@ import { useActivityStore } from "../stores/activity-store";
 import { useMediaStore } from "../stores/media-store";
 import { useNotificationStore } from "../stores/notification-store";
 import { useSystemStore } from "../stores/system-store";
+import { usePluginStore } from "../stores/plugin-store";
 import type {
   BatteryPayload,
   BluetoothPayload,
   BrightnessPayload,
   IpcEnvelope,
   NotificationPayload,
+  PluginHealthPayload,
+  PluginListPayload,
   VolumePayload,
   WifiPayload,
 } from "../../../types/src/index";
@@ -155,6 +158,20 @@ class IpcClient {
       case "DndChanged": {
         break;
       }
+      case "PluginList": {
+        const p = envelope.payload as PluginListPayload;
+        if (p && Array.isArray(p.plugins)) {
+          usePluginStore.getState().setPlugins(p.plugins);
+        }
+        break;
+      }
+      case "PluginChanged": {
+        const p = envelope.payload as PluginHealthPayload;
+        if (p?.name) {
+          usePluginStore.getState().updatePlugin(p);
+        }
+        break;
+      }
       case "ConfigChanged": {
         break;
       }
@@ -190,6 +207,44 @@ class IpcClient {
 
   async sendCommand(command: string): Promise<void> {
     await invoke("send_command", { command });
+  }
+
+  // --- plugin management commands (story 6-5) -------------------------------
+  // Each serializes a typed `IpcCommand` and reuses the `send_command` bridge.
+
+  private async sendPluginCommand(cmd: Record<string, unknown>): Promise<void> {
+    await this.sendCommand(JSON.stringify(cmd));
+  }
+
+  /** Request the current plugin list (daemon replies with a `PluginList` event). */
+  async getPlugins(): Promise<void> {
+    await this.sendPluginCommand({ type: "GetPlugins" });
+  }
+
+  /** Request a single plugin's health (daemon replies with `PluginChanged`). */
+  async getPluginHealth(name: string): Promise<void> {
+    await this.sendPluginCommand({ type: "GetPluginHealth", payload: { name } });
+  }
+
+  /** Enable or disable a plugin. Disabling stops it without unloading. */
+  async setPluginEnabled(name: string, enabled: boolean): Promise<void> {
+    await this.sendPluginCommand({
+      type: "SetPluginEnabled",
+      payload: { name, enabled },
+    });
+  }
+
+  /** Uninstall a plugin (daemon stops it first, then removes it). */
+  async uninstallPlugin(name: string): Promise<void> {
+    await this.sendPluginCommand({ type: "UninstallPlugin", payload: { name } });
+  }
+
+  /** Push a new config object for a plugin. */
+  async setPluginConfig(name: string, config: unknown): Promise<void> {
+    await this.sendPluginCommand({
+      type: "SetPluginConfig",
+      payload: { name, config },
+    });
   }
 
   private scheduleReconnect() {

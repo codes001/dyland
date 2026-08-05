@@ -155,6 +155,44 @@ export interface ConfigChangedPayload {
   changes: unknown;
 }
 
+/** Root application configuration (Epic 7). Mirror of Rust `AppConfig`.
+ * Every field is optional here because the daemon always sends a fully
+ * hydrated object, but partial `UpdateConfig` patches send only changed keys. */
+export interface AppConfig {
+  general: GeneralConfig;
+  appearance: AppearanceConfig;
+  accessibility: AccessibilityConfig;
+  features: FeatureToggles;
+  last_category: string | null;
+}
+
+export interface GeneralConfig {
+  start_on_login: boolean;
+}
+
+export type ThemePreference = "dark" | "light" | "system";
+
+export interface AppearanceConfig {
+  theme: ThemePreference;
+}
+
+export interface AccessibilityConfig {
+  /** null = follow system `prefers-reduced-motion`. */
+  reduce_motion: boolean | null;
+  /** null = follow system `prefers-contrast`. */
+  high_contrast: boolean | null;
+}
+
+export interface FeatureToggles {
+  battery: boolean;
+  wifi: boolean;
+  bluetooth: boolean;
+  volume: boolean;
+  brightness: boolean;
+  media: boolean;
+  notifications: boolean;
+}
+
 export interface PluginHealthPayload {
   name: string;
   version: string;

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
+use crate::config::ConfigStore;
 use crate::plugins::PluginManager;
 use crate::sources::battery::BatterySource;
 use crate::sources::bluetooth::BluetoothSource;
@@ -29,6 +30,10 @@ pub struct SourceContext {
     pub brightness_source: Option<Arc<BrightnessSource>>,
     pub plugin_manager: Option<Arc<PluginManager>>,
     pub plugin_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
+    pub config_store: Option<Arc<ConfigStore>>,
+    /// Relays `ConfigChanged` events (wrapped as `IpcEnvelope`) to every open
+    /// connection when any client updates the config.
+    pub config_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
 }
 
 impl SourceContext {
@@ -56,6 +61,9 @@ impl SourceContext {
             receivers.push(tx.subscribe());
         }
         if let Some(tx) = &self.plugin_broadcast {
+            receivers.push(tx.subscribe());
+        }
+        if let Some(tx) = &self.config_broadcast {
             receivers.push(tx.subscribe());
         }
         receivers

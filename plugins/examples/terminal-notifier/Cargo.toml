@@ -1,0 +1,19 @@
+[package]
+name = "dyd-terminal-notifier"
+version = "0.1.0"
+edition = "2021"
+description = "Reference dyd plugin: terminal command completion notifications"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dyd-plugin-sdk = { path = "../../sdk" }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

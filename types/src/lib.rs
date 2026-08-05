@@ -243,6 +243,86 @@ pub struct ConfigChangedPayload {
     pub changes: serde_json::Value,
 }
 
+/// Root application configuration (Epic 7). Every field is defaulted so a
+/// missing or partial `config.json` still hydrates a complete, valid config.
+/// Serialized to `$XDG_CONFIG_HOME/dyd/config.json` and mirrored to the UI in
+/// `ConfigChanged` events. The daemon stores this as a `serde_json::Value` and
+/// deep-merges updates, so unknown fields on disk are preserved across writes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AppConfig {
+    pub general: GeneralConfig,
+    pub appearance: AppearanceConfig,
+    pub accessibility: AccessibilityConfig,
+    pub features: FeatureToggles,
+    /// Last-opened settings category, so the panel reopens where the user left off.
+    pub last_category: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GeneralConfig {
+    pub start_on_login: bool,
+}
+
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self { start_on_login: false }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AppearanceConfig {
+    /// `"dark"` (default), `"light"`, or `"system"`.
+    pub theme: String,
+}
+
+impl Default for AppearanceConfig {
+    fn default() -> Self {
+        Self { theme: "dark".to_string() }
+    }
+}
+
+/// Accessibility overrides. `None` means "follow the system preference"
+/// (`prefers-reduced-motion` / `prefers-contrast`); `Some(bool)` is an explicit
+/// user override.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AccessibilityConfig {
+    pub reduce_motion: Option<bool>,
+    pub high_contrast: Option<bool>,
+}
+
+/// Per-feature enable flags. All default to `true`. Disabling hides a feature
+/// in the UI and persists the preference; the daemon's source listener keeps
+/// running (runtime start/stop is deferred — see deferred-work.md).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FeatureToggles {
+    pub battery: bool,
+    pub wifi: bool,
+    pub bluetooth: bool,
+    pub volume: bool,
+    pub brightness: bool,
+    pub media: bool,
+    pub notifications: bool,
+}
+
+impl Default for FeatureToggles {
+    fn default() -> Self {
+        Self {
+            battery: true,
+            wifi: true,
+            bluetooth: true,
+            volume: true,
+            brightness: true,
+            media: true,
+            notifications: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginHealthPayload {
     pub name: String,

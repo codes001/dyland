@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { listen } from "@tauri-apps/api/event";
 import Pill from "./components/Pill";
@@ -9,12 +9,14 @@ import StatusIconRow from "./components/status/StatusIconRow";
 import StatusExpandedView from "./components/status/StatusExpandedView";
 import PillNotificationContent from "./components/notification/PillNotificationContent";
 import NotificationExpandedView from "./components/notification/NotificationExpandedView";
+import Settings from "./components/settings/Settings";
 import { connectionStore } from "./stores/connection";
 import { usePillStore } from "./stores/pill-store";
 import { useActivityStore } from "./stores/activity-store";
 import { useMediaStore } from "./stores/media-store";
 import { useNotificationStore } from "./stores/notification-store";
 import { useSystemStore } from "./stores/system-store";
+
 
 function App() {
   const state = usePillStore((s) => s.state);
@@ -24,6 +26,7 @@ function App() {
   const media = useMediaStore((s) => s.media);
   const notification = useNotificationStore((s) => s.notification);
   const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     connectionStore.init();
@@ -90,27 +93,45 @@ function App() {
       </Pill>
 
       <ExpandedView onClose={() => transitionTo("active")}>
-        {selectedStatusFeature ? (
+        {showSettings ? (
+          <Settings onClose={() => setShowSettings(false)} />
+        ) : selectedStatusFeature ? (
           <StatusExpandedView />
         ) : notification ? (
           <NotificationExpandedView />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center", justifyContent: "center", height: "100%", minHeight: 160 }}>
             <span style={{ fontSize: 14, opacity: 0.6 }}>No activity</span>
-            <button
-              onClick={() => transitionTo("active")}
-              style={{
-                padding: "6px 16px",
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.2)",
-                background: "rgba(255,255,255,0.05)",
-                color: "#fff",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              Collapse
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => transitionTo("active")}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  background: "rgba(255,255,255,0.05)",
+                  color: "#fff",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Collapse
+              </button>
+              <button
+                onClick={() => setShowSettings(true)}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  background: "rgba(255,255,255,0.05)",
+                  color: "#fff",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                Plugins
+              </button>
+            </div>
           </div>
         )}
       </ExpandedView>

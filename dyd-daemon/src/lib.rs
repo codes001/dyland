@@ -1,3 +1,4 @@
+pub mod config;
 pub mod health;
 pub mod ipc;
 pub mod lifecycle;
@@ -55,6 +56,7 @@ pub struct Daemon {
     volume_source: Option<Arc<VolumeSource>>,
     brightness_source: Option<Arc<BrightnessSource>>,
     plugin_manager: Arc<PluginManager>,
+    config_store: Arc<config::ConfigStore>,
 }
 
 impl Daemon {
@@ -87,6 +89,8 @@ impl Daemon {
             host_ctx,
         ));
 
+        let config_store = config::ConfigStore::load();
+
         Self {
             state: DaemonState::Starting,
             shutdown_tx,
@@ -109,6 +113,7 @@ impl Daemon {
             volume_source: None,
             brightness_source: None,
             plugin_manager,
+            config_store,
         }
     }
 
@@ -211,6 +216,31 @@ impl Daemon {
         let clients = self.connected_clients.clone();
         let shutdown_rx = self.shutdown_rx.clone();
         let (ready_tx, ready_rx) = oneshot::channel::<()>();
+
+        // Bridge the config store's typed ConfigChanged broadcast into an
+        // IpcEnvelope broadcast that connections relay like any other source.
+        let (config_env_tx, _) = tokio::sync::broadcast::channel::<dyd_types::IpcEnvelope>(16);
+        {
+            let mut store_rx = self.config_store.subscribe();
+            let env_tx = config_env_tx.clone();
+            tokio::spawn(async move {
+                loop {
+                    match store_rx.recv().await {
+                        Ok(payload) => {
+                            let env = dyd_types::IpcEnvelope::event(
+                                dyd_types::IpcEvent::ConfigChanged(payload),
+                            );
+                            if env_tx.send(env).is_err() {
+                                // no active connections; keep listening
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    }
+                }
+            });
+        }
+
         let sources = ipc::context::SourceContext {
             media_broadcast: self.media_source.as_ref().map(|m| m.event_broadcast()),
             notification_broadcast: self
@@ -231,6 +261,8 @@ impl Daemon {
             brightness_source: self.brightness_source.clone(),
             plugin_manager: Some(self.plugin_manager.clone()),
             plugin_broadcast: Some(self.plugin_manager.event_broadcast()),
+            config_store: Some(self.config_store.clone()),
+            config_broadcast: Some(config_env_tx),
         };
 
         let handle = tokio::spawn(async move {

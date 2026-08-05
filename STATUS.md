@@ -11,14 +11,14 @@
 | **1. Foundation & Core Infrastructure** | **review** | 6/6 stories implemented (awaiting review) |
 | **2. Pill — Rendering & Interaction** | **review** | 6/6 stories implemented (awaiting review) |
 | **3. Media Integration** | **review** | 5/5 stories implemented (awaiting review) |
-| **4. Notification Interception** | **backlog** | Not started |
-| **5. System Status Indicators** | **backlog** | Not started |
-| **6. Plugin System** | **backlog** | Not started |
+| **4. Notification Interception** | **done** | 2/2 stories implemented (4.3–4.5 deferred) |
+| **5. System Status Indicators** | **done** | 6/6 stories implemented |
+| **6. Plugin System** | **review** | 6/6 stories implemented (awaiting review) |
 | **7. Settings & Preferences** | **backlog** | Not started |
 | **8. Polish & Performance** | **backlog** | Not started |
 | **9. Distribution** | **backlog** | Not started |
 
-**Overall:** 17 of 54 stories implemented (31%). Epics 1-3 in review.
+**Overall:** 31 stories implemented across Epics 1–6. Epics 1–3 & 6 in review; Epics 4–5 done. Epic 7 (Settings & Preferences) is next.
 
 ---
 
@@ -66,11 +66,13 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 | Story | Status | What |
 |-------|--------|------|
-| 4.1 | **backlog** | Not started |
-| 4.2 | **backlog** | Not started |
-| 4.3 | **backlog** | Not started |
-| 4.4 | **backlog** | Not started |
-| 4.5 | **backlog** | Not started |
+| 4.1 | **done** | D-Bus Notification Monitor |
+| 4.2 | **done** | Notification Rendering in Island |
+| 4.3 | **deferred** | Notification Actions — not implemented (post-v1) |
+| 4.4 | **deferred** | Notification Grouping — not implemented (post-v1) |
+| 4.5 | **deferred** | Do Not Disturb Mode — not implemented (post-v1) |
+
+Epic scoped to the monitor + rendering pair for v1; 4.3–4.5 deferred.
 
 ---
 
@@ -78,12 +80,12 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 | Story | Status | What |
 |-------|--------|------|
-| 5.1 | **backlog** | Not started |
-| 5.2 | **backlog** | Not started |
-| 5.3 | **backlog** | Not started |
-| 5.4 | **backlog** | Not started |
-| 5.5 | **backlog** | Not started |
-| 5.6 | **backlog** | Not started |
+| 5.1 | **done** | Battery Monitoring |
+| 5.2 | **done** | WiFi Status |
+| 5.3 | **done** | Bluetooth Status |
+| 5.4 | **done** | Volume Control |
+| 5.5 | **done** | Brightness Control |
+| 5.6 | **done** | Status Icon Row |
 
 ---
 
@@ -91,12 +93,12 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 | Story | Status | What |
 |-------|--------|------|
-| 6.1 | **backlog** | Not started |
-| 6.2 | **backlog** | Not started |
-| 6.3 | **backlog** | Not started |
-| 6.4 | **backlog** | Not started |
-| 6.5 | **backlog** | Not started |
-| 6.6 | **backlog** | Not started |
+| 6.1 | **review** | Plugin Manifest |
+| 6.2 | **review** | Plugin Lifecycle & Registry |
+| 6.3 | **review** | WASM Runtime — wasmtime sandbox + host API |
+| 6.4 | **review** | Plugin SDK + `cargo-dyd` tooling |
+| 6.5 | **review** | Plugin Management UI |
+| 6.6 | **review** | Example Plugins (docker-status, vscode-git-status, terminal-notifier) |
 
 ---
 
@@ -136,5 +138,5 @@ All tasks within each story are checked complete. Awaiting code review to move t
 
 ---
 
-*Last updated: 2026-07-19*
+*Last updated: 2026-08-04*
 *Source: `_bmad-output/implementation-artifacts/sprint-status.yaml`*

@@ -1,0 +1,19 @@
+[package]
+name = "dyd-vscode-git-status"
+version = "0.1.0"
+edition = "2021"
+description = "Reference dyd plugin: VS Code git status via window title"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dyd-plugin-sdk = { path = "../../sdk" }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

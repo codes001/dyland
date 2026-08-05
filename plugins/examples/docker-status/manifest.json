@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "name": "docker-status",
+  "version": "0.1.0",
+  "author": "dyland",
+  "description": "Shows Docker container status (running/total + list) in the Dynamic Island",
+  "entry_point": "plugin.wasm",
+  "permissions": ["unix_socket:/var/run/docker.sock"],
+  "ui_components": ["expanded"],
+  "dependencies": [],
+  "sdk_version": "0.1",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "poll_interval_secs": {
+        "type": "integer",
+        "title": "Poll interval (seconds)",
+        "description": "How often to query the Docker socket.",
+        "default": 10
+      },
+      "show_stopped": {
+        "type": "boolean",
+        "title": "Show stopped containers",
+        "description": "Include non-running containers in the expanded list.",
+        "default": true
+      }
+    }
+  }
+}

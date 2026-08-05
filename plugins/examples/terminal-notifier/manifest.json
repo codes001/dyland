@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "name": "terminal-notifier",
+  "version": "0.1.0",
+  "author": "dyland",
+  "description": "Shows terminal command completion (name, exit code, duration) in the Dynamic Island",
+  "entry_point": "plugin.wasm",
+  "permissions": ["dbus:org.freedesktop.Notifications"],
+  "ui_components": ["expanded"],
+  "dependencies": [],
+  "sdk_version": "0.1",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "min_duration_ms": {
+        "type": "integer",
+        "title": "Minimum duration (ms)",
+        "description": "Only notify for commands that ran at least this long.",
+        "default": 2000
+      },
+      "notify_on_success": {
+        "type": "boolean",
+        "title": "Notify on success",
+        "description": "Show a notification for exit-0 commands, not just failures.",
+        "default": true
+      }
+    }
+  }
+}

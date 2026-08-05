@@ -413,15 +413,43 @@ async fn handle_command(
                 },
             ))
         }
-        IpcCommand::GetConfig => IpcEnvelope::event(IpcEvent::ConnectionStatus(
-            dyd_types::ConnectionStatusPayload {
-                status: "ok:config_not_implemented".to_string(),
-            },
-        )),
-        IpcCommand::UpdateConfig { changes: _ } => {
-            IpcEnvelope::event(IpcEvent::ConfigChanged(dyd_types::ConfigChangedPayload {
-                changes: serde_json::json!({"status": "ok"}),
-            }))
+        IpcCommand::GetConfig => {
+            if let Some(store) = ctx.config_store.as_ref() {
+                IpcEnvelope::event(IpcEvent::ConfigChanged(dyd_types::ConfigChangedPayload {
+                    changes: store.snapshot(),
+                }))
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_config_store".to_string(),
+                    },
+                ))
+            }
+        }
+        IpcCommand::UpdateConfig { changes } => {
+            if let Some(store) = ctx.config_store.as_ref() {
+                match store.update(changes) {
+                    Ok(snapshot) => {
+                        // Broadcast the full snapshot to every connection (the
+                        // config broadcast also fires via the store's channel);
+                        // reply to this caller with the new config directly.
+                        IpcEnvelope::event(IpcEvent::ConfigChanged(
+                            dyd_types::ConfigChangedPayload { changes: snapshot },
+                        ))
+                    }
+                    Err(e) => IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                        dyd_types::ConnectionStatusPayload {
+                            status: format!("error:{e}"),
+                        },
+                    )),
+                }
+            } else {
+                IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                    dyd_types::ConnectionStatusPayload {
+                        status: "error:no_config_store".to_string(),
+                    },
+                ))
+            }
         }
         IpcCommand::GetPlugins => {
             if let Some(manager) = ctx.plugin_manager.clone() {
