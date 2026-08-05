@@ -118,10 +118,21 @@ impl Daemon {
     }
 
     pub async fn run(&mut self) {
+        let launch_start = tokio::time::Instant::now();
         self.setup_logging();
         tracing::info!(pid = std::process::id(), "dyd-daemon starting");
 
+        // Critical path step 1: Bind IPC server early so UI can connect immediately
+        self.start_ipc_server().await;
+        let ipc_ready_ms = launch_start.elapsed().as_millis();
+        tracing::info!(elapsed_ms = ipc_ready_ms, "IPC server bound & listening");
+
+        // Step 2: Establish D-Bus connections
         self.connect_dbus().await;
+        let dbus_ready_ms = launch_start.elapsed().as_millis();
+        tracing::info!(elapsed_ms = dbus_ready_ms, "D-Bus connections established");
+
+        // Step 3: Initialize sources & listeners
         self.init_media_source().await;
         self.init_notification_source().await;
         self.init_battery_source().await;
@@ -129,7 +140,7 @@ impl Daemon {
         self.init_bluetooth_source().await;
         self.init_volume_source().await;
         self.init_brightness_source().await;
-        self.start_ipc_server().await;
+
         self.start_fullscreen_poller().await;
         self.start_media_poller().await;
         self.start_notification_listener().await;
@@ -139,10 +150,12 @@ impl Daemon {
         self.start_volume_poller().await;
         self.start_brightness_poller().await;
         self.init_plugins().await;
+
         self.state = DaemonState::Running;
         self.health.set_ready();
         self.start_time = tokio::time::Instant::now();
-        tracing::info!("daemon ready");
+        let total_startup_ms = launch_start.elapsed().as_millis();
+        tracing::info!(elapsed_ms = total_startup_ms, "daemon ready");
 
         let mut sigterm = signals::sigterm_signal();
         let mut sigint = signals::sigint_signal();

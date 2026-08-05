@@ -2,6 +2,7 @@ pub mod plugin;
 
 pub use plugin::{PluginManifest, ValidationIssue, ValidationReport};
 
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -255,6 +256,8 @@ pub struct AppConfig {
     pub appearance: AppearanceConfig,
     pub accessibility: AccessibilityConfig,
     pub features: FeatureToggles,
+    pub notifications: NotificationConfig,
+    pub shortcuts: ShortcutConfig,
     /// Last-opened settings category, so the panel reopens where the user left off.
     pub last_category: Option<String>,
 }
@@ -292,6 +295,41 @@ impl Default for AppearanceConfig {
 pub struct AccessibilityConfig {
     pub reduce_motion: Option<bool>,
     pub high_contrast: Option<bool>,
+    pub font_scale: Option<f32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AppNotificationRule {
+    pub allow: bool,
+    pub show_silently: bool,
+    pub queue_only: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct NotificationConfig {
+    pub dnd_enabled: bool,
+    pub app_rules: HashMap<String, AppNotificationRule>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ShortcutConfig {
+    pub bindings: HashMap<String, String>,
+}
+
+impl Default for ShortcutConfig {
+    fn default() -> Self {
+        let mut bindings = HashMap::new();
+        bindings.insert("expand".to_string(), "Space".to_string());
+        bindings.insert("collapse".to_string(), "Escape".to_string());
+        bindings.insert("prev_activity".to_string(), "ArrowLeft".to_string());
+        bindings.insert("next_activity".to_string(), "ArrowRight".to_string());
+        bindings.insert("toggle_dnd".to_string(), "d".to_string());
+        bindings.insert("open_settings".to_string(), "s".to_string());
+        Self { bindings }
+    }
 }
 
 /// Per-feature enable flags. All default to `true`. Disabling hides a feature

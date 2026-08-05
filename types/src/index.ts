@@ -163,6 +163,8 @@ export interface AppConfig {
   appearance: AppearanceConfig;
   accessibility: AccessibilityConfig;
   features: FeatureToggles;
+  notifications: NotificationConfig;
+  shortcuts: ShortcutConfig;
   last_category: string | null;
 }
 
@@ -181,6 +183,23 @@ export interface AccessibilityConfig {
   reduce_motion: boolean | null;
   /** null = follow system `prefers-contrast`. */
   high_contrast: boolean | null;
+  /** null = 1.0 (default font scale, ranges 0.75 to 1.5). */
+  font_scale: number | null;
+}
+
+export interface AppNotificationRule {
+  allow: boolean;
+  show_silently: boolean;
+  queue_only: boolean;
+}
+
+export interface NotificationConfig {
+  dnd_enabled: boolean;
+  app_rules: Record<string, AppNotificationRule>;
+}
+
+export interface ShortcutConfig {
+  bindings: Record<string, string>;
 }
 
 export interface FeatureToggles {

@@ -6,7 +6,9 @@ import { useMediaStore } from "../stores/media-store";
 import { useNotificationStore } from "../stores/notification-store";
 import { useSystemStore } from "../stores/system-store";
 import { usePluginStore } from "../stores/plugin-store";
+import { useConfigStore } from "../stores/config-store";
 import type {
+  AppConfig,
   BatteryPayload,
   BluetoothPayload,
   BrightnessPayload,
@@ -173,6 +175,11 @@ class IpcClient {
         break;
       }
       case "ConfigChanged": {
+        const p = envelope.payload as { changes?: AppConfig } | AppConfig;
+        const config = (p && "changes" in p ? p.changes : p) as AppConfig;
+        if (config && typeof config === "object") {
+          useConfigStore.getState().setConfig(config);
+        }
         break;
       }
       case "MediaChanged": {
@@ -237,6 +244,16 @@ class IpcClient {
   /** Uninstall a plugin (daemon stops it first, then removes it). */
   async uninstallPlugin(name: string): Promise<void> {
     await this.sendPluginCommand({ type: "UninstallPlugin", payload: { name } });
+  }
+
+  /** Request current application config from daemon. */
+  async getConfig(): Promise<void> {
+    await this.sendPluginCommand({ type: "GetConfig" });
+  }
+
+  /** Update application config in daemon. */
+  async updateConfig(changes: Record<string, unknown>): Promise<void> {
+    await this.sendPluginCommand({ type: "UpdateConfig", payload: { changes } });
   }
 
   /** Push a new config object for a plugin. */

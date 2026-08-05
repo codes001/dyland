@@ -1,6 +1,6 @@
 # Sprint Status - dyland
 # Generated: 2026-07-19
-# Project Phase: Epic 1 Foundation & Core Infrastructure
+# Project Phase: Epic 7 Settings & Preferences
 
 status_definitions:
   backlog: "Not yet started, waiting in sprint backlog"
@@ -10,38 +10,38 @@ status_definitions:
   done: "Code reviewed and approved, story complete"
 
 development_status:
-  epic-1: "review"
-  epic-2: "review"
-  epic-3: "review"
+  epic-1: "done"
+  epic-2: "done"
+  epic-3: "done"
   epic-4: "done"
   epic-5: "done"
-  epic-6: "review"
-  epic-7: "backlog"
-  epic-8: "backlog"
+  epic-6: "done"
+  epic-7: "done"
+  epic-8: "in-progress"
   epic-9: "backlog"
 
   # Epic 1 - Foundation & Core Infrastructure
-  1-1-project-scaffolding: "review"
-  1-2-daemon-core: "review"
-  1-3-ui-shell: "review"
-  1-4-ipc-bridge: "review"
-  1-5-pill-placeholder: "review"
-  1-6-session-management: "review"
+  1-1-project-scaffolding: "done"
+  1-2-daemon-core: "done"
+  1-3-ui-shell: "done"
+  1-4-ipc-bridge: "done"
+  1-5-pill-placeholder: "done"
+  1-6-session-management: "done"
 
   # Epic 2 - The Pill: Rendering & Interaction
-  2-1-state-machine: "review"
-  2-2-smooth-animations: "review"
-  2-3-gesture-handling: "review"
-  2-4-activity-queue: "review"
-  2-5-hover-focus: "review"
-  2-6-fullscreen-detection: "review"
+  2-1-state-machine: "done"
+  2-2-smooth-animations: "done"
+  2-3-gesture-handling: "done"
+  2-4-activity-queue: "done"
+  2-5-hover-focus: "done"
+  2-6-fullscreen-detection: "done"
 
   # Epic 3 - Media Integration
-  3-1-mpris-source: "review"
-  3-2-media-info-display: "review"
-  3-3-media-playback-controls: "review"
-  3-4-album-art: "review"
-  3-5-multi-player-handling: "review"
+  3-1-mpris-source: "done"
+  3-2-media-info-display: "done"
+  3-3-media-playback-controls: "done"
+  3-4-album-art: "done"
+  3-5-multi-player-handling: "done"
 
   # Epic 4 - Notification Interception
   4-1-notification-source: "done"
@@ -56,11 +56,25 @@ development_status:
   5-6-status-icon-row: "done"
 
   # Epic 6 - Plugin System
-  6-1-plugin-manifest: "review"
-  6-2-plugin-lifecycle: "review"
-  6-3-wasm-runtime: "review"
-  6-4-plugin-sdk: "review"
-  6-5-plugin-management-ui: "review"
-  6-6-example-plugins: "review"
+  6-1-plugin-manifest: "done"
+  6-2-plugin-lifecycle: "done"
+  6-3-wasm-runtime: "done"
+  6-4-plugin-sdk: "done"
+  6-5-plugin-management-ui: "done"
+  6-6-example-plugins: "done"
 
-last_updated: "2026-08-04"
+  # Epic 7 - Settings & Preferences
+  7-1-settings-ui: "done"
+  7-2-theme-system: "done"
+  7-3-feature-toggles: "done"
+  7-4-keyboard-shortcuts: "done"
+  7-5-accessibility-settings: "done"
+
+  # Epic 8 - Polish & Performance
+  8-1-animation-polish: "in-progress"
+  8-2-startup-performance: "in-progress"
+  8-3-runtime-performance: "in-progress"
+  8-4-edge-case-handling: "in-progress"
+  8-5-visual-polish: "in-progress"
+
+last_updated: "2026-08-05"

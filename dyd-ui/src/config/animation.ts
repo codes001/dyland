@@ -1,27 +1,29 @@
 export const SPRING = {
-  apple: { type: "spring" as const, stiffness: 350, damping: 25, mass: 0.8 },
-  expand: { type: "spring" as const, stiffness: 300, damping: 25, mass: 1 },
-  collapse: { type: "spring" as const, stiffness: 350, damping: 30, mass: 0.9 },
-  quick: { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.7 },
+  apple: { type: "spring" as const, stiffness: 380, damping: 28, mass: 0.8 },
+  expand: { type: "spring" as const, stiffness: 400, damping: 28, mass: 0.8 },
+  collapse: { type: "spring" as const, stiffness: 350, damping: 30, mass: 0.8 },
+  quick: { type: "spring" as const, stiffness: 420, damping: 26, mass: 0.6 },
+  hapticPulse: { type: "spring" as const, stiffness: 500, damping: 20, mass: 0.5 },
 };
 
 export const EASE = {
   out: [0.0, 0.0, 0.2, 1] as [number, number, number, number],
   in: [0.4, 0.0, 1, 1] as [number, number, number, number],
+  inOut: [0.4, 0.0, 0.2, 1] as [number, number, number, number],
 };
 
 export const DURATION = {
-  dormantToActive: 0.3,
+  dormantToActive: 0.25,
   activeToDormant: 0.2,
-  activeToExpanded: 0.4,
-  expandedToActive: 0.3,
+  activeToExpanded: 0.35,
+  expandedToActive: 0.25,
   toHidden: 0.1,
   hiddenToPrev: 0.15,
-  contentEntry: 0.2,
-  contentExit: 0.15,
-  contentStagger: 0.05,
-  hoverFade: 0.15,
-  hoverExit: 0.2,
+  contentEntry: 0.18,
+  contentExit: 0.12,
+  contentStagger: 0.04,
+  hoverFade: 0.12,
+  hoverExit: 0.15,
 };
 
 export const PILL_SIZE = {

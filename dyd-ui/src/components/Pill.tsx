@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
 import { useNotificationStore } from "../stores/notification-store";
+import { useConfigStore } from "../stores/config-store";
 import { PILL_SIZE, SPRING, DURATION, EASE } from "../config/animation";
 import { useGestureHandler } from "../hooks/useGestureHandler";
 import type { PillState } from "../types/pill";
@@ -20,13 +21,14 @@ function getSize(state: PillState, hasNotification: boolean) {
   return PILL_SIZE[state] ?? PILL_SIZE.dormant;
 }
 
-export default function Pill({ children }: PillProps) {
+export default function Pill({ children, onLongPress }: PillProps & { onLongPress?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const state = usePillStore((s) => s.state);
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const resetIdleTimer = usePillStore((s) => s.resetIdleTimer);
   const hasNotification = useNotificationStore((s) => s.notification !== null);
+  const reduceMotion = useConfigStore((s) => s.config?.accessibility?.reduce_motion);
   const setPreviousFullscreen = useRef(false);
 
   const handleClick = useCallback(() => {
@@ -43,8 +45,12 @@ export default function Pill({ children }: PillProps) {
   }, [state, transitionTo]);
 
   const handleLongPress = useCallback(() => {
-    console.debug("long-press: context menu triggered");
-  }, []);
+    if (onLongPress) {
+      onLongPress();
+    } else {
+      console.debug("long-press: context menu triggered");
+    }
+  }, [onLongPress]);
 
   const { onPointerDown } = useGestureHandler({
     onClick: handleClick,
@@ -64,14 +70,24 @@ export default function Pill({ children }: PillProps) {
     state === "active" || state === "expanded" || (state === "dormant" && hasNotification);
   const isHidden = state === "hidden";
 
+  const transitionSpec = reduceMotion === true
+    ? { duration: 0 }
+    : state === "hidden" || (state === "active" && isFullscreen)
+    ? { duration: DURATION.toHidden, ease: EASE.out }
+    : SPRING.apple;
+
   return (
     <motion.div
       ref={ref}
       tabIndex={isInteractive ? 0 : undefined}
-      role={isInteractive ? "button" : undefined}
+      role={isInteractive ? "button" : "status"}
+      aria-live="polite"
+      aria-label="Dynamic Island"
       aria-expanded={state === "expanded" ? true : undefined}
       onPointerDown={isInteractive ? onPointerDown : undefined}
       onMouseEnter={resetIdleTimer}
+      whileHover={isInteractive && reduceMotion !== true ? { scale: 1.02 } : undefined}
+      whileTap={isInteractive && reduceMotion !== true ? { scale: 0.98 } : undefined}
       animate={{
         width: size.width,
         minHeight: size.height,
@@ -80,18 +96,16 @@ export default function Pill({ children }: PillProps) {
         scaleX: 1,
         scaleY: 1,
       }}
-      transition={
-        state === "hidden" || state === "active" && isFullscreen
-          ? { duration: DURATION.toHidden, ease: EASE.out }
-          : SPRING.apple
-      }
+      transition={transitionSpec}
       className="pill"
       style={{
         position: "fixed",
         top: 10,
         left: "50%",
         x: "-50%",
-        backgroundColor: "#000000",
+        backgroundColor: "var(--pill-bg)",
+        color: "var(--pill-text)",
+        border: "1px solid var(--pill-border)",
         borderRadius: 18,
         display: "flex",
         alignItems: "center",
@@ -110,11 +124,15 @@ export default function Pill({ children }: PillProps) {
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -10, opacity: 0 }}
-            transition={{
-              duration: DURATION.contentEntry,
-              ease: EASE.out,
-              delay: DURATION.contentStagger,
-            }}
+            transition={
+              reduceMotion === true
+                ? { duration: 0 }
+                : {
+                    duration: DURATION.contentEntry,
+                    ease: EASE.out,
+                    delay: DURATION.contentStagger,
+                  }
+            }
             style={{
               width: "100%",
               height: "100%",

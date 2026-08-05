@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-scale: 1;
+  --pill-bg: #000000;
+  --pill-text: #ffffff;
+  --pill-border: rgba(255, 255, 255, 0.15);
+  --pill-hover-glow: rgba(255, 255, 255, 0.3);
+  --card-bg: rgba(30, 30, 30, 0.85);
+}
+
+[data-theme="light"] {
+  --pill-bg: #e5e5e7;
+  --pill-text: #000000;
+  --pill-border: rgba(0, 0, 0, 0.15);
+  --pill-hover-glow: rgba(0, 0, 0, 0.2);
+  --card-bg: rgba(240, 240, 243, 0.95);
+}
+
+[data-theme="dark"] {
+  --pill-bg: #000000;
+  --pill-text: #ffffff;
+  --pill-border: rgba(255, 255, 255, 0.15);
+  --pill-hover-glow: rgba(255, 255, 255, 0.3);
+  --card-bg: rgba(30, 30, 30, 0.85);
+}
+
+[data-high-contrast="true"] {
+  --pill-border: #ffffff;
+  --pill-hover-glow: rgba(255, 255, 255, 0.8);
+  --card-bg: #000000;
+}
+
+[data-theme="light"][data-high-contrast="true"] {
+  --pill-border: #000000;
+  --pill-hover-glow: rgba(0, 0, 0, 0.8);
+  --card-bg: #ffffff;
+}
+
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -19,13 +60,13 @@ body,
 
 @media (hover: hover) {
   .pill:hover {
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 8px var(--pill-hover-glow);
     transition: box-shadow 150ms ease;
   }
 }
 
 .pill:focus-visible {
-  outline: 2px solid white;
+  outline: 2px solid var(--pill-text);
   outline-offset: 2px;
   border-radius: inherit;
 }
@@ -35,7 +76,7 @@ body,
 }
 
 .pill button:focus-visible {
-  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline: 1px solid var(--pill-border);
   outline-offset: 1px;
 }
 
@@ -73,4 +114,11 @@ body,
   .dyd-notification-critical {
     animation: none;
   }
+}
+
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] .dyd-notification-critical,
+[data-reduce-motion="true"] .marquee {
+  animation: none !important;
+  transition: none !important;
 }
