@@ -47,8 +47,7 @@ appimage: build-release
 clean:
 	cargo clean && rm -rf dist/
 
-install:
-	@test -f target/release/dyd-daemon || $(MAKE) build-release
+install: build-release
 	install -Dm755 target/release/dyd-daemon $(DESTDIR)$(BINDIR)/dyd-daemon
 	@if [ -f target/release/dyd-ui-tauri ]; then install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui; elif [ -f target/release/dyland ]; then install -Dm755 target/release/dyland $(DESTDIR)$(BINDIR)/dyd-ui; fi
 	install -Dm644 resources/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
