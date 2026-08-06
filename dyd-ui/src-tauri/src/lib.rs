@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::sync::Mutex;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};

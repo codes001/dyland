@@ -4,9 +4,26 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, watch};
 use zbus::{Connection, MessageStream};
 
+type NotifyArgs<'a> = (
+    String,
+    u32,
+    String,
+    String,
+    String,
+    Vec<String>,
+    std::collections::HashMap<String, zvariant::Value<'a>>,
+    i32,
+);
+
 pub struct NotificationSource {
     dbus_conn: Option<Connection>,
     event_broadcast: broadcast::Sender<IpcEnvelope>,
+}
+
+impl Default for NotificationSource {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl NotificationSource {
@@ -102,19 +119,7 @@ impl NotificationSource {
 
         let body = msg.body();
 
-        let args: Result<
-            (
-                String,
-                u32,
-                String,
-                String,
-                String,
-                Vec<String>,
-                std::collections::HashMap<String, zvariant::Value<'_>>,
-                i32,
-            ),
-            _,
-        > = body.deserialize();
+        let args: Result<NotifyArgs<'_>, _> = body.deserialize();
 
         let (app_name, replaces_id, app_icon, summary, body_text, actions, hints, _expire_timeout) =
             match args {
