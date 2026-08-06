@@ -8,7 +8,7 @@ Thank you for your interest in contributing to **dyland**!
 
 1. **Fork and Clone Repo**:
    ```bash
-   git clone https://github.com/your-username/dyland.git
+   git clone https://github.com/codes001/dyland.git
    cd dyland
    ```
 

@@ -14,7 +14,7 @@
 ## 📦 Installation Options
 
 ### Option 1: Debian / Ubuntu Package (`.deb`)
-Download the latest `.deb` release from [GitHub Releases](https://github.com/dyland-org/dyland/releases):
+Download the latest `.deb` release from [GitHub Releases](https://github.com/codes001/dyland/releases):
 
 ```bash
 sudo dpkg -i dyland_0.1.0_amd64.deb
@@ -51,7 +51,7 @@ chmod +x dyland-0.1.0-x86_64.AppImage
 
 #### Build & Install
 ```bash
-git clone https://github.com/dyland-org/dyland.git
+git clone https://github.com/codes001/dyland.git
 cd dyland
 make build-release
 sudo make install

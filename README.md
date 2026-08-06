@@ -83,7 +83,7 @@ To launch `dyland` in local development mode (runs both the Rust backend daemon 
 
 ```bash
 # Clone the repository
-git clone https://github.com/dyland-org/dyland.git
+git clone https://github.com/codes001/dyland.git
 cd dyland
 
 # Install frontend dependencies
@@ -144,7 +144,7 @@ chmod +x dist/dyland-0.1.0-x86_64.AppImage
 ./dist/dyland-0.1.0-x86_64.AppImage
 ```
 
-For more detailed setup options, refer to [`INSTALL.md`](file:///home/l2e/Documents/CODES/dyland/INSTALL.md).
+For more detailed setup options, refer to [`INSTALL.md`](INSTALL.md).
 
 ---
 
@@ -169,7 +169,7 @@ If you find **dyland** helpful and enjoy having a sleek Dynamic Island experienc
 ### 💖 Ways to Support:
 
 - **Buy Me a Coffee**: [buymeacoffee.com](https://www.buymeacoffee.com) ☕
-- **GitHub Sponsors**: Sponsor the project directly on GitHub
+- **GitHub Sponsors**: [github.com/sponsors/codes001](https://github.com/sponsors/codes001)
 - **Ko-fi**: Support via [ko-fi.com](https://ko-fi.com)
 - **Star the Repo**: Give us a ⭐️ on GitHub to spread the word!
 
