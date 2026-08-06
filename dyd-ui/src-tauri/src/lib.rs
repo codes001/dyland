@@ -60,7 +60,7 @@ async fn connect_daemon(
 
                 match connected {
                     Some(s) => s,
-                    Err(_) => {
+                    None => {
                         let _ = app_handle.emit(
                             "daemon-status",
                             serde_json::json!({"status": "disconnected", "error": "Could not connect to dyd-daemon"}),

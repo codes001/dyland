@@ -64,6 +64,11 @@ body[data-tauri="true"] #root {
   background: transparent !important;
 }
 
+.pill {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
 @media (hover: hover) {
   .pill:hover {
     box-shadow: 0 0 8px var(--pill-hover-glow);
