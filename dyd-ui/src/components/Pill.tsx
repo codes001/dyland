@@ -89,6 +89,7 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
       whileHover={isInteractive && reduceMotion !== true ? { scale: 1.02 } : undefined}
       whileTap={isInteractive && reduceMotion !== true ? { scale: 0.98 } : undefined}
       animate={{
+        x: "-50%",
         width: size.width,
         minHeight: size.height,
         opacity: isHidden ? 0 : 1,

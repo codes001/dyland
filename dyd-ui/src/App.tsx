@@ -13,8 +13,6 @@ import Settings from "./components/settings/Settings";
 import ThemeProvider from "./components/theme/ThemeProvider";
 import { connectionStore } from "./stores/connection";
 import { usePillStore } from "./stores/pill-store";
-import { useActivityStore } from "./stores/activity-store";
-import { useMediaStore } from "./stores/media-store";
 import { useNotificationStore } from "./stores/notification-store";
 import { useSystemStore } from "./stores/system-store";
 import { useConfigStore } from "./stores/config-store";
@@ -24,8 +22,6 @@ function App() {
   const state = usePillStore((s) => s.state);
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
-  const currentActivity = useActivityStore((s) => s.currentActivity);
-  const media = useMediaStore((s) => s.media);
   const notification = useNotificationStore((s) => s.notification);
   const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
   const bindings = useConfigStore((s) => s.config.shortcuts.bindings);
@@ -102,7 +98,6 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [bindings, state, dndEnabled, transitionTo, updateConfig]);
 
-  const hasContent = currentActivity !== null || media !== null || notification !== null;
 
   const contextMenuItems: ContextMenuItem[] = [
     {
@@ -129,9 +124,19 @@ function App() {
         }}
       >
         <Pill onLongPress={() => setMenuOpen(true)}>
-          {(state === "dormant" || (state === "active" && notification)) && !isFullscreen && (
+          {state !== "expanded" && !isFullscreen && (
             <AnimatePresence mode="popLayout">
-              {!hasContent ? (
+              {notification ? (
+                <motion.div
+                  key="notification"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeIn" }}
+                >
+                  <PillNotificationContent />
+                </motion.div>
+              ) : (
                 <motion.div
                   key="status"
                   initial={{ opacity: 0 }}
@@ -140,20 +145,6 @@ function App() {
                   transition={{ duration: 0.1, ease: "easeOut" }}
                 >
                   <StatusIconRow />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="content"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeIn" }}
-                >
-                  {notification ? (
-                    <PillNotificationContent />
-                  ) : (
-                    <span style={{ color: "var(--pill-text)", fontSize: 12, opacity: 0.4 }}>dyd</span>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>

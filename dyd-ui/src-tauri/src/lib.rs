@@ -44,9 +44,9 @@ async fn connect_daemon(
             Ok(s) => s,
             Err(_) => {
                 // Try launching dyd-daemon if it's not running
-                let _ = std::process::Command::new("dyd-daemon").spawn().or_else(|_| {
-                    std::process::Command::new("./target/release/dyd-daemon").spawn()
-                });
+                let _ = std::process::Command::new("dyd-daemon")
+                    .spawn()
+                    .or_else(|_| std::process::Command::new("./target/release/dyd-daemon").spawn());
 
                 // Poll for socket for up to 2 seconds
                 let mut connected = None;
