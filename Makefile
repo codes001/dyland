@@ -47,9 +47,14 @@ appimage: build-release
 clean:
 	cargo clean && rm -rf dist/
 
-install: build-release
+install:
+	@if [ ! -f target/release/dyd-daemon ] || [ ! -f target/release/dyd-ui-tauri ]; then \
+		echo "Release binaries not found in target/release/. Running build-release..."; \
+		PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release || (echo "Failed to run cargo. Please run 'make build-release' as your normal user first, then run 'sudo make install'." && exit 1); \
+		cd dyd-ui && npm run build && PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release --manifest-path src-tauri/Cargo.toml; \
+	fi
 	install -Dm755 target/release/dyd-daemon $(DESTDIR)$(BINDIR)/dyd-daemon
-	@if [ -f target/release/dyd-ui-tauri ]; then install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui; elif [ -f target/release/dyland ]; then install -Dm755 target/release/dyland $(DESTDIR)$(BINDIR)/dyd-ui; fi
+	install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui
 	install -Dm644 resources/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
 	install -Dm644 dyd-ui/src-tauri/icons/128x128.png $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	install -Dm644 resources/dyd-daemon.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
