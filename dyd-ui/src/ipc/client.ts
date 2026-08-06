@@ -68,19 +68,6 @@ class IpcClient {
         type: "BrightnessChanged",
         payload: { brightness: 80, has_backlight: true },
       });
-      this.handleDaemonMessage({
-        type: "MediaChanged",
-        payload: {
-          player: "Spotify",
-          title: "Starboy",
-          artist: "The Weeknd",
-          album: "Starboy",
-          art_url: null,
-          length: 230000000,
-          position: 45000000,
-          playback_status: "playing",
-        },
-      });
       return;
     }
 

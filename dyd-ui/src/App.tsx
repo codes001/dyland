@@ -36,6 +36,9 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      document.body.dataset.tauri = "true";
+    }
     connectionStore.init();
     return () => connectionStore.cleanup();
   }, []);

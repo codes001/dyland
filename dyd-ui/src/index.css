@@ -54,8 +54,14 @@ body,
 #root {
   width: 100%;
   height: 100%;
-  background: transparent;
+  background: #121214;
   overflow: hidden;
+}
+
+body[data-tauri="true"],
+body[data-tauri="true"] html,
+body[data-tauri="true"] #root {
+  background: transparent !important;
 }
 
 @media (hover: hover) {
