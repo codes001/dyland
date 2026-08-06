@@ -41,19 +41,37 @@ async fn connect_daemon(
 
     tokio::spawn(async move {
         let stream = match UnixStream::connect("/tmp/dyd-daemon.sock").await {
-            Ok(s) => {
-                let _ =
-                    app_handle.emit("daemon-status", serde_json::json!({"status": "connected"}));
-                s
-            }
-            Err(e) => {
-                let _ = app_handle.emit(
-                    "daemon-status",
-                    serde_json::json!({"status": "disconnected", "error": e.to_string()}),
-                );
-                return;
+            Ok(s) => s,
+            Err(_) => {
+                // Try launching dyd-daemon if it's not running
+                let _ = std::process::Command::new("dyd-daemon").spawn().or_else(|_| {
+                    std::process::Command::new("./target/release/dyd-daemon").spawn()
+                });
+
+                // Poll for socket for up to 2 seconds
+                let mut connected = None;
+                for _ in 0..20 {
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    if let Ok(s) = UnixStream::connect("/tmp/dyd-daemon.sock").await {
+                        connected = Some(s);
+                        break;
+                    }
+                }
+
+                match connected {
+                    Some(s) => s,
+                    Err(_) => {
+                        let _ = app_handle.emit(
+                            "daemon-status",
+                            serde_json::json!({"status": "disconnected", "error": "Could not connect to dyd-daemon"}),
+                        );
+                        return;
+                    }
+                }
             }
         };
+
+        let _ = app_handle.emit("daemon-status", serde_json::json!({"status": "connected"}));
 
         let (reader, mut writer_half) = stream.into_split();
         let mut buf_reader = BufReader::new(reader);

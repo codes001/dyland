@@ -27,7 +27,13 @@ export default function StatusIconRow() {
     (f) => STATUS_FEATURES[f].enabled && availability[f],
   );
 
-  if (visibleIcons.length === 0) return null;
+  if (visibleIcons.length === 0) {
+    return (
+      <span style={{ color: "var(--pill-text)", fontSize: 12, opacity: 0.5, fontWeight: 500, letterSpacing: "0.05em" }}>
+        dyland
+      </span>
+    );
+  }
 
   const openFeature = (feature: StatusFeature) => {
     selectFeature(feature);

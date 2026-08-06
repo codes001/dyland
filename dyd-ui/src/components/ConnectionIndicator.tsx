@@ -29,14 +29,16 @@ export function ConnectionIndicator() {
     <div
       style={{
         position: "fixed",
-        bottom: 4,
-        right: 4,
+        top: 10,
+        right: 16,
         display: "flex",
         alignItems: "center",
         gap: 4,
         fontSize: 10,
         color: indicatorColors[status],
-        opacity: 0.6,
+        opacity: 0.8,
+        pointerEvents: "none",
+        zIndex: 10000,
       }}
     >
       <span
