@@ -69,13 +69,6 @@ body[data-tauri="true"] #root {
   transform: translateX(-50%) !important;
 }
 
-@media (hover: hover) {
-  .pill:hover {
-    box-shadow: 0 0 8px var(--pill-hover-glow);
-    transition: box-shadow 150ms ease;
-  }
-}
-
 .pill:focus-visible {
   outline: 2px solid var(--pill-text);
   outline-offset: 2px;
@@ -109,6 +102,20 @@ body[data-tauri="true"] #root {
 @keyframes dyd-battery-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+
+@keyframes dyd-wave {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.dyd-wave {
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: dyd-wave 0.9s ease-in-out infinite;
 }
 
 @keyframes dyd-critical-glow {

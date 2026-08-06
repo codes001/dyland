@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePillStore } from "../stores/pill-store";
 import { useNotificationStore } from "../stores/notification-store";
+import { useMediaStore } from "../stores/media-store";
 import { useConfigStore } from "../stores/config-store";
 import { PILL_SIZE, SPRING, DURATION, EASE } from "../config/animation";
 import { useGestureHandler } from "../hooks/useGestureHandler";
@@ -13,10 +14,13 @@ export interface PillProps {
   children?: React.ReactNode;
 }
 
-function getSize(state: PillState, hasNotification: boolean) {
+function getSize(state: PillState, hasNotification: boolean, hasActiveMedia: boolean) {
   if (state === "hidden") return { width: 0, height: 0 };
   if (hasNotification && (state === "dormant" || state === "active")) {
     return PILL_SIZE.notification;
+  }
+  if (hasActiveMedia && (state === "dormant" || state === "active")) {
+    return PILL_SIZE.media;
   }
   return PILL_SIZE[state] ?? PILL_SIZE.dormant;
 }
@@ -28,13 +32,14 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
   const transitionTo = usePillStore((s) => s.transitionTo);
   const resetIdleTimer = usePillStore((s) => s.resetIdleTimer);
   const hasNotification = useNotificationStore((s) => s.notification !== null);
+  const hasActiveMedia = useMediaStore((s) => s.media?.playbackStatus === "playing");
   const reduceMotion = useConfigStore((s) => s.config?.accessibility?.reduce_motion);
   const setPreviousFullscreen = useRef(false);
 
   const handleClick = useCallback(() => {
-    if (state === "active" || (state === "dormant" && hasNotification)) transitionTo("expanded");
+    if (state === "active" || (state === "dormant" && (hasNotification || hasActiveMedia))) transitionTo("expanded");
     resetIdleTimer();
-  }, [state, hasNotification, transitionTo, resetIdleTimer]);
+  }, [state, hasNotification, hasActiveMedia, transitionTo, resetIdleTimer]);
 
   const handleSwipeDismiss = useCallback(() => {
     if (state === "expanded") {
@@ -65,9 +70,9 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
     }
   }, [isFullscreen]);
 
-  const size = getSize(state, hasNotification);
+  const size = getSize(state, hasNotification, hasActiveMedia);
   const isInteractive =
-    state === "active" || state === "expanded" || (state === "dormant" && hasNotification);
+    state === "active" || state === "expanded" || (state === "dormant" && (hasNotification || hasActiveMedia));
   const isHidden = state === "hidden";
 
   const transitionSpec = reduceMotion === true
@@ -139,7 +144,7 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "0 12px",
+              padding: "4px 14px",
             }}
           >
             {children}

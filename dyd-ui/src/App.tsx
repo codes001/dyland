@@ -9,6 +9,7 @@ import StatusIconRow from "./components/status/StatusIconRow";
 import StatusExpandedView from "./components/status/StatusExpandedView";
 import PillNotificationContent from "./components/notification/PillNotificationContent";
 import NotificationExpandedView from "./components/notification/NotificationExpandedView";
+import PillMediaContent from "./components/PillMediaContent";
 import Settings from "./components/settings/Settings";
 import ThemeProvider from "./components/theme/ThemeProvider";
 import { connectionStore } from "./stores/connection";
@@ -16,6 +17,7 @@ import { usePillStore } from "./stores/pill-store";
 import { useNotificationStore } from "./stores/notification-store";
 import { useSystemStore } from "./stores/system-store";
 import { useConfigStore } from "./stores/config-store";
+import { useMediaStore } from "./stores/media-store";
 import { ipcClient } from "./ipc/client";
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const notification = useNotificationStore((s) => s.notification);
+  const isMediaPlaying = useMediaStore((s) => s.media?.playbackStatus === "playing");
   const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
   const bindings = useConfigStore((s) => s.config.shortcuts.bindings);
   const dndEnabled = useConfigStore((s) => s.config.notifications.dnd_enabled);
@@ -135,6 +138,16 @@ function App() {
                   transition={{ duration: 0.15, ease: "easeIn" }}
                 >
                   <PillNotificationContent />
+                </motion.div>
+              ) : isMediaPlaying ? (
+                <motion.div
+                  key="media"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                >
+                  <PillMediaContent />
                 </motion.div>
               ) : (
                 <motion.div

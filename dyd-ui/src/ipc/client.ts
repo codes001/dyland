@@ -7,6 +7,7 @@ import { useNotificationStore } from "../stores/notification-store";
 import { useSystemStore } from "../stores/system-store";
 import { usePluginStore } from "../stores/plugin-store";
 import { useConfigStore } from "../stores/config-store";
+import { useTransientStore } from "../stores/transient-store";
 import type {
   AppConfig,
   BatteryPayload,
@@ -50,7 +51,7 @@ class IpcClient {
       this.setStatus("connected");
       this.handleDaemonMessage({
         type: "BatteryChanged",
-        payload: { state: "discharging", percentage: 85.0, is_present: true, time_to_empty: 14400, time_to_full: null, health: 98.0 },
+        payload: { state: "charging", percentage: 85.0, is_present: true, time_to_empty: null, time_to_full: 5400, health: 98.0 },
       });
       this.handleDaemonMessage({
         type: "WifiChanged",
@@ -58,7 +59,7 @@ class IpcClient {
       });
       this.handleDaemonMessage({
         type: "BluetoothChanged",
-        payload: { powered: true, connected_devices: ["Headphones"], adapters: ["hci0"] },
+        payload: { powered: true, discoverable: false, present: true, devices: [{ name: "Headphones", connected: true, icon: null, address: "aa:bb:cc:dd:ee:ff" }] },
       });
       this.handleDaemonMessage({
         type: "VolumeChanged",
@@ -67,6 +68,19 @@ class IpcClient {
       this.handleDaemonMessage({
         type: "BrightnessChanged",
         payload: { brightness: 80, has_backlight: true },
+      });
+      this.handleDaemonMessage({
+        type: "MediaChanged",
+        payload: {
+          player: "spotify",
+          title: "Blinding Lights",
+          artist: "The Weeknd",
+          album: "After Hours",
+          art_url: null,
+          length: 200000,
+          position: 45000,
+          playback_status: "playing",
+        },
       });
       return;
     }
@@ -173,14 +187,22 @@ class IpcClient {
       case "VolumeChanged": {
         const p = envelope.payload as VolumePayload;
         if (p && typeof p.volume === "number") {
+          const prev = useSystemStore.getState().volume;
           useSystemStore.getState().setVolume(p);
+          if (prev && prev.volume !== p.volume) {
+            useTransientStore.getState().pulse("volume");
+          }
         }
         break;
       }
       case "BrightnessChanged": {
         const p = envelope.payload as BrightnessPayload;
         if (p && typeof p.has_backlight === "boolean") {
+          const prev = useSystemStore.getState().brightness;
           useSystemStore.getState().setBrightness(p);
+          if (prev && prev.brightness !== p.brightness) {
+            useTransientStore.getState().pulse("brightness");
+          }
         }
         break;
       }

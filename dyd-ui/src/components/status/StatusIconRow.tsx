@@ -1,6 +1,12 @@
 import { useSystemStore } from "../../stores/system-store";
+import { useTransientStore } from "../../stores/transient-store";
 import { usePillStore } from "../../stores/pill-store";
-import { DEFAULT_STATUS_ORDER, STATUS_FEATURES, type StatusFeature } from "../../config/status";
+import {
+  DEFAULT_STATUS_ORDER,
+  STATUS_FEATURES,
+  isStatusFeatureActive,
+  type StatusFeature,
+} from "../../config/status";
 import BatteryIndicator from "./BatteryIndicator";
 import WifiIndicator from "./WifiIndicator";
 import BluetoothIndicator from "./BluetoothIndicator";
@@ -13,27 +19,18 @@ export default function StatusIconRow() {
   const bluetooth = useSystemStore((s) => s.bluetooth);
   const volume = useSystemStore((s) => s.volume);
   const brightness = useSystemStore((s) => s.brightness);
+  const transient = useTransientStore((s) => s.active);
   const selectFeature = useSystemStore((s) => s.selectStatusFeature);
 
-  const availability: Record<StatusFeature, boolean> = {
-    battery: battery?.is_present === true,
-    wifi: wifi != null && wifi.state !== "none",
-    bluetooth: bluetooth !== null,
-    volume: volume !== null,
-    brightness: brightness?.has_backlight === true,
-  };
+  const system = { battery, wifi, bluetooth, volume, brightness };
 
-  const visibleIcons = DEFAULT_STATUS_ORDER.filter(
-    (f) => STATUS_FEATURES[f].enabled && availability[f],
-  );
+  const activeFeatures = DEFAULT_STATUS_ORDER.filter((f) => {
+    if (!STATUS_FEATURES[f].enabled) return false;
+    if (f === "volume" || f === "brightness") return transient[f];
+    return isStatusFeatureActive(f, system);
+  });
 
-  if (visibleIcons.length === 0) {
-    return (
-      <span style={{ color: "var(--pill-text)", fontSize: 12, opacity: 0.5, fontWeight: 500, letterSpacing: "0.05em" }}>
-        dyland
-      </span>
-    );
-  }
+  if (activeFeatures.length === 0) return null;
 
   const openFeature = (feature: StatusFeature) => {
     selectFeature(feature);
@@ -58,7 +55,7 @@ export default function StatusIconRow() {
         overflow: "hidden",
       }}
     >
-      {visibleIcons.map((f) => {
+      {activeFeatures.map((f) => {
         const common = {
           size: 16,
           showPercentage: true,
