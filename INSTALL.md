@@ -4,14 +4,14 @@
 
 ---
 
-## 📋 System Requirements
+## System Requirements
 - **OS**: Ubuntu 24.04 LTS, Debian 12+, Arch Linux, or Fedora 40+
 - **Desktop Environment**: GNOME 46+ (Wayland or X11)
 - **Dependencies**: `libwebkit2gtk-4.1`, `libgtk-3-0`, `libayatana-appindicator3-1`, `upower`, `NetworkManager`, `bluez`
 
 ---
 
-## 📦 Installation Options
+## Installation Options
 
 ### Option 1: Debian / Ubuntu Package (`.deb`)
 Download the latest `.deb` release from [GitHub Releases](https://github.com/codes001/dyland/releases):
@@ -64,7 +64,7 @@ systemctl --user enable --now dyd-daemon.service
 
 ---
 
-## 🗑️ Uninstallation
+## Uninstallation
 
 If installed via `.deb`:
 ```bash

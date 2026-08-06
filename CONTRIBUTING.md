@@ -4,7 +4,7 @@ Thank you for your interest in contributing to **dyland**!
 
 ---
 
-## 🛠️ Development Setup
+## Development Setup
 
 1. **Fork and Clone Repo**:
    ```bash
@@ -31,7 +31,7 @@ Thank you for your interest in contributing to **dyland**!
 
 ---
 
-## 🧪 Testing & Linting
+## Testing & Linting
 
 Before submitting a Pull Request, run all tests and linters:
 
@@ -47,7 +47,7 @@ npm run build
 
 ---
 
-## 📜 Pull Request Workflow
+## Pull Request Workflow
 
 1. Create a descriptive feature branch (`git checkout -b feat/my-new-feature`).
 2. Keep commits concise using Conventional Commits syntax (`feat:`, `fix:`, `docs:`, `refactor:`).

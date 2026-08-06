@@ -1,27 +1,26 @@
-# 🏝️ dyland
+# dyland
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.78%2B-orange.svg)](https://www.rust-lang.org/)
 [![Tauri](https://img.shields.io/badge/tauri-v1-24C8D8.svg)](https://tauri.app/)
 [![React](https://img.shields.io/badge/react-18-61DAFB.svg)](https://react.dev/)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-yellow.svg?style=flat&logo=buy-me-a-coffee)](https://www.buymeacoffee.com)
 
-**dyland** (`dyd`) is an elegant, high-performance **Dynamic Island** desktop overlay designed specifically for Linux environments (GNOME / Wayland / X11). Built using a decoupled architecture powered by **Rust** for background system hooks and **Tauri + React + Framer Motion** for fluid 60fps spring animations, dyland brings seamless notifications, media controls, status indicators, and extensible WASM plugins directly to your Linux desktop.
-
----
-
-## ✨ Features
-
-- 🔔 **Notification Interception**: Live D-Bus notification capture presented directly within the interactive island UI.
-- 🎵 **Media Integration**: Full MPRIS support with album art rendering, player selection, and smooth playback controls (Play, Pause, Skip, Prev).
-- ⚡ **System Status Indicators**: Real-time D-Bus monitoring for Battery status, Wi-Fi connectivity, Bluetooth state, Volume adjustment, and Screen Brightness.
-- 🔌 **WASM Plugin Engine**: Sandboxed plugin runtime (`wasmtime`) allowing developers to create custom island modules in Rust using the `dyd-plugin-sdk`.
-- 🎨 **Theme & Customization System**: Support for Dark, Light, and System themes, custom keyboard shortcuts, reduced motion mode, and per-app notification preferences.
-- 🚀 **Performant & Isolated**: Decoupled dual-process architecture separating background system interactions (`dyd-daemon`) from the UI overlay (`dyd-ui`).
+**dyland** (`dyd`) is a Dynamic Island desktop overlay for Linux environments (GNOME / Wayland / X11). Built using a decoupled architecture with **Rust** for background system hooks and **Tauri + React + Framer Motion** for spring animations, dyland brings notifications, media controls, status indicators, and extensible WASM plugins to your Linux desktop.
 
 ---
 
-## 🏛️ Architecture Overview
+## Features
+
+- **Notification Interception**: Live D-Bus notification capture presented directly within the interactive island UI.
+- **Media Integration**: Full MPRIS support with album art rendering, player selection, and playback controls (Play, Pause, Skip, Prev).
+- **System Status Indicators**: Real-time D-Bus monitoring for Battery status, Wi-Fi connectivity, Bluetooth state, Volume adjustment, and Screen Brightness.
+- **WASM Plugin Engine**: Sandboxed plugin runtime (`wasmtime`) allowing developers to create custom island modules in Rust using `dyd-plugin-sdk`.
+- **Theme & Customization System**: Support for Dark, Light, and System themes, custom keyboard shortcuts, reduced motion mode, and per-app notification preferences.
+- **Performant & Isolated**: Decoupled dual-process architecture separating background system interactions (`dyd-daemon`) from the UI overlay (`dyd-ui`).
+
+---
+
+## Architecture Overview
 
 ```
                   +-----------------------------------+
@@ -54,11 +53,11 @@
 +-------------------------------------------------------------------+
 ```
 
-Detailed architectural information can be found in [`ARCHITECTURE.md`](file:///home/l2e/Documents/CODES/dyland/ARCHITECTURE.md).
+Detailed architectural information can be found in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running or building **dyland**, ensure your system meets the following requirements:
 
@@ -75,7 +74,7 @@ Before running or building **dyland**, ensure your system meets the following re
 
 ---
 
-## 🚀 How to Run dyland
+## How to Run dyland
 
 ### Option 1: Quick Development Run
 
@@ -148,7 +147,7 @@ For more detailed setup options, refer to [`INSTALL.md`](INSTALL.md).
 
 ---
 
-## 🛠️ Project Commands
+## Project Commands
 
 | Command | Action |
 |:--- |:--- |
@@ -162,21 +161,21 @@ For more detailed setup options, refer to [`INSTALL.md`](INSTALL.md).
 
 ---
 
-## ☕ Support the Developer
+## Support the Developer
 
-If you find **dyland** helpful and enjoy having a sleek Dynamic Island experience on your Linux desktop, please consider supporting the developer! Your contributions help cover hosting costs, development hardware, and coffee-fueled coding sessions.
+If you find **dyland** helpful and enjoy having a Dynamic Island experience on your Linux desktop, please consider supporting development.
 
-### 💖 Ways to Support:
+### Ways to Support:
 
-- **Buy Me a Coffee**: [buymeacoffee.com](https://www.buymeacoffee.com) ☕
+- **Buy Me a Coffee**: [buymeacoffee.com](https://www.buymeacoffee.com)
 - **GitHub Sponsors**: [github.com/sponsors/codes001](https://github.com/sponsors/codes001)
 - **Ko-fi**: Support via [ko-fi.com](https://ko-fi.com)
-- **Star the Repo**: Give us a ⭐️ on GitHub to spread the word!
+- **Star the Repo**: Give us a star on GitHub to spread the word.
 
-Every cup of coffee is greatly appreciated! Thank you for supporting open-source software! 🙏
+Thank you for supporting open-source software!
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
