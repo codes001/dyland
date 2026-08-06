@@ -44,6 +44,46 @@ class IpcClient {
   }
 
   private async doConnect() {
+    const isTauriEnv = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+    if (!isTauriEnv) {
+      // Standard browser preview mode: inject mock system state so the UI is fully interactive in browser
+      this.setStatus("connected");
+      this.handleDaemonMessage({
+        type: "BatteryChanged",
+        payload: { state: "discharging", percentage: 85.0, is_present: true, time_to_empty: 14400, time_to_full: null, health: 98.0 },
+      });
+      this.handleDaemonMessage({
+        type: "WifiChanged",
+        payload: { state: "connected", ssid: "Home-WiFi", signal_dbm: -52, signal_percent: 88, frequency_mhz: 5240, ip_v4: "192.168.1.105" },
+      });
+      this.handleDaemonMessage({
+        type: "BluetoothChanged",
+        payload: { powered: true, connected_devices: ["Headphones"], adapters: ["hci0"] },
+      });
+      this.handleDaemonMessage({
+        type: "VolumeChanged",
+        payload: { volume: 0.65, muted: false, sink_name: "Speaker" },
+      });
+      this.handleDaemonMessage({
+        type: "BrightnessChanged",
+        payload: { brightness: 80, has_backlight: true },
+      });
+      this.handleDaemonMessage({
+        type: "MediaChanged",
+        payload: {
+          player: "Spotify",
+          title: "Starboy",
+          artist: "The Weeknd",
+          album: "Starboy",
+          art_url: null,
+          length: 230000000,
+          position: 45000000,
+          playback_status: "playing",
+        },
+      });
+      return;
+    }
+
     try {
       this.unlistenMsg = await listen<unknown>("daemon-message", (event) => {
         this.handleDaemonMessage(event.payload);
