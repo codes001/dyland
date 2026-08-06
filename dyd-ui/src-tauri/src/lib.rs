@@ -1,5 +1,5 @@
-use std::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -43,11 +43,15 @@ async fn connect_daemon(
     tokio::spawn(async move {
         let stream = match UnixStream::connect("/tmp/dyd-daemon.sock").await {
             Ok(s) => {
-                let _ = app_handle.emit("daemon-status", serde_json::json!({"status": "connected"}));
+                let _ =
+                    app_handle.emit("daemon-status", serde_json::json!({"status": "connected"}));
                 s
             }
             Err(e) => {
-                let _ = app_handle.emit("daemon-status", serde_json::json!({"status": "disconnected", "error": e.to_string()}));
+                let _ = app_handle.emit(
+                    "daemon-status",
+                    serde_json::json!({"status": "disconnected", "error": e.to_string()}),
+                );
                 return;
             }
         };
@@ -81,7 +85,10 @@ async fn connect_daemon(
             }
         }
 
-        let _ = app_handle.emit("daemon-status", serde_json::json!({"status": "disconnected"}));
+        let _ = app_handle.emit(
+            "daemon-status",
+            serde_json::json!({"status": "disconnected"}),
+        );
     });
 
     Ok("connecting".to_string())

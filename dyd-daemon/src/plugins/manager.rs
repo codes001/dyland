@@ -155,7 +155,10 @@ impl PluginManager {
             if registry.contains_key(&name) {
                 return Err(PluginError::Duplicate(name));
             }
-            if let Err(e) = self.executor.init(&name, &handle.manifest, &handle.directory) {
+            if let Err(e) = self
+                .executor
+                .init(&name, &handle.manifest, &handle.directory)
+            {
                 handle.record_error(format!("init failed: {e}"));
                 registry.insert(name.clone(), handle);
                 tracing::warn!(plugin = %name, error = %e, "plugin registered but init failed");
@@ -183,7 +186,9 @@ impl PluginManager {
                 config_schema: None,
                 config: Some(serde_json::json!({})),
             });
-        let _ = self.event_broadcast.send(IpcEnvelope::event(IpcEvent::PluginChanged(payload)));
+        let _ = self
+            .event_broadcast
+            .send(IpcEnvelope::event(IpcEvent::PluginChanged(payload)));
         Ok(name)
     }
 
@@ -441,9 +446,8 @@ impl PluginManager {
     }
 
     pub async fn install_plugin(&self, path: &Path) -> Result<String, PluginError> {
-        let manifest_str = std::fs::read_to_string(path.join("manifest.json")).map_err(|e| {
-            PluginError::InvalidManifest(format!("cannot read manifest.json: {e}"))
-        })?;
+        let manifest_str = std::fs::read_to_string(path.join("manifest.json"))
+            .map_err(|e| PluginError::InvalidManifest(format!("cannot read manifest.json: {e}")))?;
         let report = dyd_types::plugin::validate_manifest(&manifest_str);
         if !report.is_valid() {
             return Err(PluginError::InvalidManifest(format!("{report}")));
@@ -458,25 +462,21 @@ impl PluginManager {
                 PluginError::Operation(format!("failed to replace existing plugin dir: {e}"))
             })?;
         }
-        std::fs::create_dir_all(&dest).map_err(|e| {
-            PluginError::Operation(format!("failed to create plugin dir: {e}"))
-        })?;
-        for entry in std::fs::read_dir(path).map_err(|e| {
-            PluginError::Operation(format!("failed to read source plugin dir: {e}"))
-        })? {
-            let entry = entry.map_err(|e| {
-                PluginError::Operation(format!("failed to read source entry: {e}"))
-            })?;
+        std::fs::create_dir_all(&dest)
+            .map_err(|e| PluginError::Operation(format!("failed to create plugin dir: {e}")))?;
+        for entry in std::fs::read_dir(path)
+            .map_err(|e| PluginError::Operation(format!("failed to read source plugin dir: {e}")))?
+        {
+            let entry = entry
+                .map_err(|e| PluginError::Operation(format!("failed to read source entry: {e}")))?;
             let src = entry.path();
             let target = dest.join(entry.file_name());
             if src.is_dir() {
-                copy_dir(&src, &target).map_err(|e| {
-                    PluginError::Operation(format!("failed to copy dir: {e}"))
-                })?;
+                copy_dir(&src, &target)
+                    .map_err(|e| PluginError::Operation(format!("failed to copy dir: {e}")))?;
             } else {
-                std::fs::copy(&src, &target).map_err(|e| {
-                    PluginError::Operation(format!("failed to copy file: {e}"))
-                })?;
+                std::fs::copy(&src, &target)
+                    .map_err(|e| PluginError::Operation(format!("failed to copy file: {e}")))?;
             }
         }
         self.register(manifest, dest, false).await
@@ -526,8 +526,8 @@ fn copy_dir(src: &Path, dest: &Path) -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::host::StubExecutor;
+    use super::*;
     use std::sync::Arc;
 
     fn test_manifest(name: &str) -> dyd_types::PluginManifest {

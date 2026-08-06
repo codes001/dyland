@@ -29,8 +29,8 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing_subscriber::EnvFilter;
 
-use plugins::manager::PluginManager;
 use plugins::host::{PluginExecutor, StubExecutor};
+use plugins::manager::PluginManager;
 use plugins::runtime::{HostContext, WasmExecutor};
 
 static LOG_INIT: OnceLock<()> = OnceLock::new();

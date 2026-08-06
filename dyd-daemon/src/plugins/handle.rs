@@ -58,9 +58,11 @@ pub struct PluginHandle {
 
 impl PluginHandle {
     pub fn new(manifest: PluginManifest, directory: PathBuf, is_core: bool) -> Self {
-        let config = manifest.config_schema.clone().map(|_| {
-            serde_json::json!({})
-        }).unwrap_or_else(|| serde_json::json!({}));
+        let config = manifest
+            .config_schema
+            .clone()
+            .map(|_| serde_json::json!({}))
+            .unwrap_or_else(|| serde_json::json!({}));
         Self {
             name: manifest.name.clone(),
             version: manifest.version.clone(),
@@ -111,10 +113,7 @@ impl PluginHandle {
 
     pub fn crashes_in_window(&self, window_secs: u64) -> u32 {
         let cutoff = Instant::now() - std::time::Duration::from_secs(window_secs);
-        self.crash_times
-            .iter()
-            .filter(|t| **t >= cutoff)
-            .count() as u32
+        self.crash_times.iter().filter(|t| **t >= cutoff).count() as u32
     }
 
     pub fn should_auto_disable(&self) -> bool {

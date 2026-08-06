@@ -199,12 +199,24 @@ impl BatterySource {
         &self,
         conn: &Connection,
     ) -> Result<BatteryState, Box<dyn std::error::Error + Send + Sync>> {
-        let state = get_property::<u32>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "State")
-            .await
-            .unwrap_or(0);
+        let state = get_property::<u32>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "State",
+        )
+        .await
+        .unwrap_or(0);
 
-        let percentage = match get_property::<f64>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "Percentage")
-            .await
+        let percentage = match get_property::<f64>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "Percentage",
+        )
+        .await
         {
             Ok(p) => p,
             Err(e) => {
@@ -217,19 +229,37 @@ impl BatterySource {
             }
         };
 
-        let is_present = get_property::<bool>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "IsPresent")
-            .await
-            .unwrap_or(false);
+        let is_present = get_property::<bool>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "IsPresent",
+        )
+        .await
+        .unwrap_or(false);
 
-        let time_to_empty = get_property_opt::<i64>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "TimeToEmpty")
-            .await
-            .filter(|v| *v > 0)
-            .map(|v| v as u64);
+        let time_to_empty = get_property_opt::<i64>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "TimeToEmpty",
+        )
+        .await
+        .filter(|v| *v > 0)
+        .map(|v| v as u64);
 
-        let time_to_full = get_property_opt::<i64>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "TimeToFull")
-            .await
-            .filter(|v| *v > 0)
-            .map(|v| v as u64);
+        let time_to_full = get_property_opt::<i64>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "TimeToFull",
+        )
+        .await
+        .filter(|v| *v > 0)
+        .map(|v| v as u64);
 
         let health = self.fetch_health(conn).await;
 
@@ -246,12 +276,23 @@ impl BatterySource {
     }
 
     async fn fetch_health(&self, conn: &Connection) -> Option<f64> {
-        let energy_full = get_property_opt::<f64>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "EnergyFull")
-            .await;
+        let energy_full = get_property_opt::<f64>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "EnergyFull",
+        )
+        .await;
 
-        let energy_full_design =
-            get_property_opt::<f64>(conn, "org.freedesktop.UPower", DISPLAY_DEVICE_PATH, U_DEVICE_IFACE, "EnergyFullDesign")
-                .await;
+        let energy_full_design = get_property_opt::<f64>(
+            conn,
+            "org.freedesktop.UPower",
+            DISPLAY_DEVICE_PATH,
+            U_DEVICE_IFACE,
+            "EnergyFullDesign",
+        )
+        .await;
 
         match (energy_full, energy_full_design) {
             (Some(current), Some(design)) if design > 0.0 => {

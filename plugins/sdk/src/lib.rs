@@ -159,7 +159,12 @@ mod sys {
         pub unsafe extern "C" fn on_event(_ptr: i32, _len: i32) -> i32 {
             0
         }
-        pub unsafe extern "C" fn http_request(_rptr: i32, _rlen: i32, _optr: i32, _ocap: i32) -> i32 {
+        pub unsafe extern "C" fn http_request(
+            _rptr: i32,
+            _rlen: i32,
+            _optr: i32,
+            _ocap: i32,
+        ) -> i32 {
             super::super::STATUS_UNIMPLEMENTED
         }
         pub unsafe extern "C" fn dbus_call(_rptr: i32, _rlen: i32, _optr: i32, _ocap: i32) -> i32 {
@@ -429,7 +434,9 @@ pub unsafe fn read_host_bytes(ptr: i32, len: i32) -> Vec<u8> {
 /// Re-exports used by the SDK macros. Not part of the stable API.
 #[doc(hidden)]
 pub mod __rt {
-    pub use crate::{alloc_impl, dealloc_impl, emit_activity, log_error, log_info, read_host_bytes};
+    pub use crate::{
+        alloc_impl, dealloc_impl, emit_activity, log_error, log_info, read_host_bytes,
+    };
     pub use alloc::format;
     pub use serde_json;
 }
@@ -455,7 +462,8 @@ macro_rules! plugin_entry {
         #[allow(static_mut_refs)]
         unsafe fn __dyd_instance() -> &'static mut $plugin {
             if __DYD_PLUGIN.is_none() {
-                __DYD_PLUGIN = ::core::option::Option::Some(<$plugin as ::core::default::Default>::default());
+                __DYD_PLUGIN =
+                    ::core::option::Option::Some(<$plugin as ::core::default::Default>::default());
             }
             __DYD_PLUGIN.as_mut().unwrap()
         }

@@ -123,10 +123,16 @@ impl WifiSource {
             });
         }
 
-        let specific = get_property::<zvariant::OwnedObjectPath>(conn, NM_SERVICE, &primary_path, CONN_ACTIVE_IFACE, "SpecificObject")
-            .await
-            .map(|p| p.to_string())
-            .unwrap_or_default();
+        let specific = get_property::<zvariant::OwnedObjectPath>(
+            conn,
+            NM_SERVICE,
+            &primary_path,
+            CONN_ACTIVE_IFACE,
+            "SpecificObject",
+        )
+        .await
+        .map(|p| p.to_string())
+        .unwrap_or_default();
 
         if specific.is_empty() || specific == "/" {
             return Ok(WifiState {
@@ -142,9 +148,10 @@ impl WifiSource {
             });
         }
 
-        let conn_state = get_property::<u32>(conn, NM_SERVICE, &primary_path, CONN_ACTIVE_IFACE, "State")
-            .await
-            .unwrap_or(0);
+        let conn_state =
+            get_property::<u32>(conn, NM_SERVICE, &primary_path, CONN_ACTIVE_IFACE, "State")
+                .await
+                .unwrap_or(0);
 
         let ap_path = specific;
 
@@ -217,18 +224,25 @@ impl WifiSource {
     }
 
     async fn fetch_ip(&self, conn: &Connection, active_conn_path: &str) -> Option<String> {
-        let ip4_path = get_property::<zvariant::OwnedObjectPath>(conn, NM_SERVICE, active_conn_path, CONN_ACTIVE_IFACE, "Ip4Config")
-            .await
-            .ok()?
-            .to_string();
+        let ip4_path = get_property::<zvariant::OwnedObjectPath>(
+            conn,
+            NM_SERVICE,
+            active_conn_path,
+            CONN_ACTIVE_IFACE,
+            "Ip4Config",
+        )
+        .await
+        .ok()?
+        .to_string();
 
         if ip4_path.is_empty() || ip4_path == "/" {
             return None;
         }
 
-        let addresses = get_property::<Vec<Vec<u32>>>(conn, NM_SERVICE, &ip4_path, IP4_IFACE, "Addresses")
-            .await
-            .ok()?;
+        let addresses =
+            get_property::<Vec<Vec<u32>>>(conn, NM_SERVICE, &ip4_path, IP4_IFACE, "Addresses")
+                .await
+                .ok()?;
 
         addresses
             .first()

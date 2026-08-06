@@ -103,12 +103,7 @@ pub fn build(dir: &Path) -> Result<PathBuf, DydError> {
     }
     let status = std::process::Command::new("cargo")
         .current_dir(dir)
-        .args([
-            "build",
-            "--release",
-            "--target",
-            "wasm32-wasip1",
-        ])
+        .args(["build", "--release", "--target", "wasm32-wasip1"])
         .status()
         .map_err(|e| DydError::Build(format!("failed to run cargo: {e}")))?;
     if !status.success() {
@@ -119,10 +114,7 @@ pub fn build(dir: &Path) -> Result<PathBuf, DydError> {
 
 /// Locate the built `.wasm` under `target/wasm32-wasip1/release/`.
 pub fn find_wasm_artifact(dir: &Path) -> Result<PathBuf, DydError> {
-    let release = dir
-        .join("target")
-        .join("wasm32-wasip1")
-        .join("release");
+    let release = dir.join("target").join("wasm32-wasip1").join("release");
     if !release.exists() {
         return Err(DydError::NotFound(format!(
             "no build output at {}",
@@ -146,11 +138,7 @@ pub fn find_wasm_artifact(dir: &Path) -> Result<PathBuf, DydError> {
 /// Create a `{name}-{version}.dyd` zip in `out_dir` containing `manifest.json`,
 /// `plugin.wasm` (from `wasm_path`), and any files under `dir/assets/`.
 /// Returns the path to the written archive.
-pub fn package(
-    dir: &Path,
-    wasm_path: &Path,
-    out_dir: &Path,
-) -> Result<PathBuf, DydError> {
+pub fn package(dir: &Path, wasm_path: &Path, out_dir: &Path) -> Result<PathBuf, DydError> {
     let info = read_manifest(dir)?;
     fs::create_dir_all(out_dir)?;
     let archive_path = out_dir.join(format!("{}-{}.dyd", info.name, info.version));

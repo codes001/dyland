@@ -2,8 +2,8 @@ pub mod plugin;
 
 pub use plugin::{PluginManifest, ValidationIssue, ValidationReport};
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,30 +35,76 @@ pub enum IpcEvent {
 pub enum IpcCommand {
     Ping,
     GetState,
-    DismissActivity { activity_id: String },
+    DismissActivity {
+        activity_id: String,
+    },
     CycleNext,
     CyclePrev,
-    MediaPlayPause { player: String },
-    MediaNext { player: String },
-    MediaPrevious { player: String },
-    MediaSeek { player: String, position_us: i64 },
-    MediaSetVolume { player: String, volume: f64 },
-    CyclePlayer { player: Option<String> },
-    NotificationAction { id: u32, action_key: String, reply_text: Option<String> },
-    NotificationClose { id: u32 },
-    SetDnd { enabled: bool },
-    SetVolume { volume: f64 },
-    SetMute { muted: bool },
-    SetBrightness { brightness: f64 },
-    SetBluetoothPowered { powered: bool },
+    MediaPlayPause {
+        player: String,
+    },
+    MediaNext {
+        player: String,
+    },
+    MediaPrevious {
+        player: String,
+    },
+    MediaSeek {
+        player: String,
+        position_us: i64,
+    },
+    MediaSetVolume {
+        player: String,
+        volume: f64,
+    },
+    CyclePlayer {
+        player: Option<String>,
+    },
+    NotificationAction {
+        id: u32,
+        action_key: String,
+        reply_text: Option<String>,
+    },
+    NotificationClose {
+        id: u32,
+    },
+    SetDnd {
+        enabled: bool,
+    },
+    SetVolume {
+        volume: f64,
+    },
+    SetMute {
+        muted: bool,
+    },
+    SetBrightness {
+        brightness: f64,
+    },
+    SetBluetoothPowered {
+        powered: bool,
+    },
     GetConfig,
-    UpdateConfig { changes: serde_json::Value },
+    UpdateConfig {
+        changes: serde_json::Value,
+    },
     GetPlugins,
-    GetPluginHealth { name: String },
-    InstallPlugin { path: String },
-    SetPluginEnabled { name: String, enabled: bool },
-    UninstallPlugin { name: String },
-    SetPluginConfig { name: String, config: serde_json::Value },
+    GetPluginHealth {
+        name: String,
+    },
+    InstallPlugin {
+        path: String,
+    },
+    SetPluginEnabled {
+        name: String,
+        enabled: bool,
+    },
+    UninstallPlugin {
+        name: String,
+    },
+    SetPluginConfig {
+        name: String,
+        config: serde_json::Value,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -270,7 +316,9 @@ pub struct GeneralConfig {
 
 impl Default for GeneralConfig {
     fn default() -> Self {
-        Self { start_on_login: false }
+        Self {
+            start_on_login: false,
+        }
     }
 }
 
@@ -283,7 +331,9 @@ pub struct AppearanceConfig {
 
 impl Default for AppearanceConfig {
     fn default() -> Self {
-        Self { theme: "dark".to_string() }
+        Self {
+            theme: "dark".to_string(),
+        }
     }
 }
 

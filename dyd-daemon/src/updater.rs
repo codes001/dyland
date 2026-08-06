@@ -3,9 +3,9 @@
 //! Periodically checks GitHub Releases API for newer semver tags and pushes an
 //! `UpdateAvailable` notification into the daemon's activity queue.
 
+use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
-use serde::Deserialize;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 

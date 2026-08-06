@@ -81,8 +81,8 @@ impl ConfigStore {
     /// Read + merge the config value at `path`, always returning a valid,
     /// fully-hydrated value.
     fn load_value(path: &PathBuf) -> Value {
-        let defaults = serde_json::to_value(AppConfig::default())
-            .expect("AppConfig::default must serialize");
+        let defaults =
+            serde_json::to_value(AppConfig::default()).expect("AppConfig::default must serialize");
 
         let on_disk = match std::fs::read_to_string(path) {
             Ok(text) => match serde_json::from_str::<Value>(&text) {
@@ -265,8 +265,11 @@ mod tests {
     fn unknown_fields_are_preserved() {
         let (_store, dir) = temp_store("unknown");
         let path = dir.join("config.json");
-        std::fs::write(&path, r#"{"future_key": {"nested": 1}, "appearance": {"theme": "light"}}"#)
-            .unwrap();
+        std::fs::write(
+            &path,
+            r#"{"future_key": {"nested": 1}, "appearance": {"theme": "light"}}"#,
+        )
+        .unwrap();
         let value = ConfigStore::load_value(&path);
         assert_eq!(value["future_key"]["nested"], 1);
         assert_eq!(value["appearance"]["theme"], "light");

@@ -1,10 +1,13 @@
 [Desktop Entry]
 Name=dyland
+GenericName=Dynamic Island
 Comment=Dynamic Island for Linux Desktops
-Exec=/usr/bin/dyd-ui
+Exec=dyd-ui
 Icon=dyd
 Type=Application
 Categories=Utility;System;
+Keywords=dynamic;island;dyland;overlay;notification;
 Terminal=false
 StartupNotify=true
 X-GNOME-Autostart-enabled=true
+

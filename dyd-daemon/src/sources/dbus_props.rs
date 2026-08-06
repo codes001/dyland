@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
-use zbus::Connection;
 use zbus::zvariant::OwnedValue;
+use zbus::Connection;
 
 pub async fn get_property<T>(
     conn: &Connection,

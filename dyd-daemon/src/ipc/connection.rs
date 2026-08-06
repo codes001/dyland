@@ -454,10 +454,8 @@ async fn handle_command(
         IpcCommand::GetPlugins => {
             if let Some(manager) = ctx.plugin_manager.clone() {
                 let plugins = manager.list().await;
-                let payloads: Vec<dyd_types::PluginHealthPayload> = plugins
-                    .iter()
-                    .map(crate::plugins::health_payload)
-                    .collect();
+                let payloads: Vec<dyd_types::PluginHealthPayload> =
+                    plugins.iter().map(crate::plugins::health_payload).collect();
                 IpcEnvelope::event(IpcEvent::PluginList(dyd_types::PluginListPayload {
                     plugins: payloads,
                 }))

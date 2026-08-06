@@ -86,8 +86,10 @@ impl BluetoothSource {
             )
             .await?;
         let body = msg.body();
-        let objects: HashMap<zvariant::OwnedObjectPath, HashMap<String, HashMap<String, zvariant::Value>>> =
-            body.deserialize()?;
+        let objects: HashMap<
+            zvariant::OwnedObjectPath,
+            HashMap<String, HashMap<String, zvariant::Value>>,
+        > = body.deserialize()?;
 
         if objects.is_empty() {
             return Ok(BluetoothState::default());
@@ -197,8 +199,10 @@ impl BluetoothSource {
             )
             .await?;
         let body = msg.body();
-        let objects: HashMap<zvariant::OwnedObjectPath, HashMap<String, HashMap<String, zvariant::Value>>> =
-            body.deserialize()?;
+        let objects: HashMap<
+            zvariant::OwnedObjectPath,
+            HashMap<String, HashMap<String, zvariant::Value>>,
+        > = body.deserialize()?;
 
         let mut adapters: Vec<String> = objects
             .keys()

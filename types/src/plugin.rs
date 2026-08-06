@@ -126,10 +126,9 @@ pub fn validate_manifest(json: &str) -> ValidationReport {
     for field in ["name", "version", "author", "entry_point"] {
         if let Some(v) = value.get(field) {
             if !v.is_string() {
-                report.errors.push(ValidationIssue::error(
-                    field,
-                    "must be a string",
-                ));
+                report
+                    .errors
+                    .push(ValidationIssue::error(field, "must be a string"));
             }
         }
     }
@@ -309,10 +308,7 @@ mod tests {
         let mut missing_name = json.clone();
         missing_name.as_object_mut().unwrap().remove("name");
         let report = validate_manifest(&missing_name.to_string());
-        assert!(report
-            .errors
-            .iter()
-            .any(|e| e.field_path == "name"));
+        assert!(report.errors.iter().any(|e| e.field_path == "name"));
     }
 
     #[test]

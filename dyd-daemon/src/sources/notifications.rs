@@ -1,8 +1,8 @@
+use dyd_types::{IpcEnvelope, IpcEvent, NotificationPayload};
+use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::{broadcast, watch};
 use zbus::{Connection, MessageStream};
-use futures::StreamExt;
-use dyd_types::{IpcEnvelope, IpcEvent, NotificationPayload};
 
 pub struct NotificationSource {
     dbus_conn: Option<Connection>,
@@ -38,13 +38,16 @@ impl NotificationSource {
         let match_rule =
             "interface='org.freedesktop.Notifications',member='Notify',type='method_call',eavesdrop='true'";
 
-        match conn.call_method(
-            Some("org.freedesktop.DBus"),
-            "/org/freedesktop/DBus",
-            Some("org.freedesktop.DBus"),
-            "AddMatch",
-            &(match_rule),
-        ).await {
+        match conn
+            .call_method(
+                Some("org.freedesktop.DBus"),
+                "/org/freedesktop/DBus",
+                Some("org.freedesktop.DBus"),
+                "AddMatch",
+                &(match_rule),
+            )
+            .await
+        {
             Ok(_) => tracing::info!("notification source: registered D-Bus match rule for Notify"),
             Err(e) => {
                 tracing::warn!(error = %e, "notification source: failed to register match rule");
@@ -99,15 +102,28 @@ impl NotificationSource {
 
         let body = msg.body();
 
-        let args: Result<(String, u32, String, String, String, Vec<String>, std::collections::HashMap<String, zvariant::Value<'_>>, i32), _> = body.deserialize();
+        let args: Result<
+            (
+                String,
+                u32,
+                String,
+                String,
+                String,
+                Vec<String>,
+                std::collections::HashMap<String, zvariant::Value<'_>>,
+                i32,
+            ),
+            _,
+        > = body.deserialize();
 
-        let (app_name, replaces_id, app_icon, summary, body_text, actions, hints, _expire_timeout) = match args {
-            Ok(a) => a,
-            Err(e) => {
-                tracing::debug!(error = %e, "notification source: failed to deserialize Notify args");
-                return;
-            }
-        };
+        let (app_name, replaces_id, app_icon, summary, body_text, actions, hints, _expire_timeout) =
+            match args {
+                Ok(a) => a,
+                Err(e) => {
+                    tracing::debug!(error = %e, "notification source: failed to deserialize Notify args");
+                    return;
+                }
+            };
 
         let urgency = extract_urgency(&hints);
 
@@ -145,20 +161,29 @@ impl NotificationSource {
         let _ = self.event_broadcast.send(envelope);
     }
 
-    pub async fn invoke_action(&self, id: u32, action_key: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn invoke_action(
+        &self,
+        id: u32,
+        action_key: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let conn = match &self.dbus_conn {
             Some(c) => c,
             None => return Err("no D-Bus connection".into()),
         };
-        match conn.call_method(
-            Some("org.freedesktop.Notifications"),
-            "/org/freedesktop/Notifications",
-            Some("org.freedesktop.Notifications"),
-            "InvokeAction",
-            &(id, action_key),
-        ).await {
+        match conn
+            .call_method(
+                Some("org.freedesktop.Notifications"),
+                "/org/freedesktop/Notifications",
+                Some("org.freedesktop.Notifications"),
+                "InvokeAction",
+                &(id, action_key),
+            )
+            .await
+        {
             Ok(_) => tracing::debug!(id, action_key = %action_key, "notification action invoked"),
-            Err(e) => tracing::debug!(error = %e, id, action_key = %action_key, "InvokeAction not supported"),
+            Err(e) => {
+                tracing::debug!(error = %e, id, action_key = %action_key, "InvokeAction not supported")
+            }
         }
         Ok(())
     }
@@ -174,7 +199,8 @@ impl NotificationSource {
             Some("org.freedesktop.Notifications"),
             "CloseNotification",
             &(id),
-        ).await?;
+        )
+        .await?;
         tracing::debug!(id, "notification closed via D-Bus");
         Ok(())
     }

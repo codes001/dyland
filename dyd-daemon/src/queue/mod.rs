@@ -21,7 +21,10 @@ impl ActivityQueue {
 
     pub fn push(&mut self, activity: Activity) {
         if self.heap.len() >= MAX_CAPACITY {
-            if let Some(lowest) = self.heap.iter().min_by_key(|a| (a.priority.rank(), a.timestamp))
+            if let Some(lowest) = self
+                .heap
+                .iter()
+                .min_by_key(|a| (a.priority.rank(), a.timestamp))
             {
                 if lowest.priority.rank() <= activity.priority.rank() {
                     let lowest_id = lowest.id;
@@ -29,7 +32,7 @@ impl ActivityQueue {
                     tracing::warn!(id = %lowest_id, "queue full, evicted lowest priority activity");
                 } else {
                     tracing::warn!(id = %activity.id, "queue full, dropped new activity");
-                    return;     
+                    return;
                 }
             }
         }
@@ -52,14 +55,18 @@ impl ActivityQueue {
 
     pub fn remove_by_id(&mut self, id: Uuid) -> Option<Activity> {
         let mut removed = None;
-        self.heap = self.heap.drain().filter(|a| {
-            if a.id == id {
-                removed = Some(a.clone());
-                false
-            } else {
-                true
-            }
-        }).collect();
+        self.heap = self
+            .heap
+            .drain()
+            .filter(|a| {
+                if a.id == id {
+                    removed = Some(a.clone());
+                    false
+                } else {
+                    true
+                }
+            })
+            .collect();
         removed
     }
 

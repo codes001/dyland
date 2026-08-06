@@ -51,10 +51,7 @@ impl MediaSource {
         self.dbus_conn = Some(conn);
     }
 
-    pub async fn start_polling(
-        self: Arc<Self>,
-        mut shutdown_rx: watch::Receiver<()>,
-    ) {
+    pub async fn start_polling(self: Arc<Self>, mut shutdown_rx: watch::Receiver<()>) {
         let mut tick = interval(Duration::from_secs(1));
         tick.tick().await;
 
@@ -79,16 +76,20 @@ impl MediaSource {
             None => return Ok(()),
         };
 
-        let body = conn.call_method(
-            Some("org.freedesktop.DBus"),
-            "/org/freedesktop/DBus",
-            Some("org.freedesktop.DBus"),
-            "ListNames",
-            &(),
-        ).await?.body();
+        let body = conn
+            .call_method(
+                Some("org.freedesktop.DBus"),
+                "/org/freedesktop/DBus",
+                Some("org.freedesktop.DBus"),
+                "ListNames",
+                &(),
+            )
+            .await?
+            .body();
 
         let names: Vec<String> = body.deserialize()?;
-        let mpris_names: Vec<&str> = names.iter()
+        let mpris_names: Vec<&str> = names
+            .iter()
             .filter(|n| n.starts_with("org.mpris.MediaPlayer2."))
             .map(|s| s.as_str())
             .collect();
@@ -124,24 +125,30 @@ impl MediaSource {
             let last_active = if props.playback_status == "playing" {
                 now
             } else if was_active {
-                self.players.read().await.get(name)
+                self.players
+                    .read()
+                    .await
+                    .get(name)
                     .map(|p| p.last_active)
                     .unwrap_or(now)
             } else {
                 now
             };
 
-            new_players.insert(name.to_string(), PlayerState {
-                identity: name.to_string(),
-                title: props.title,
-                artist: props.artist,
-                album: props.album,
-                art_url: props.art_url,
-                length: props.length,
-                playback_status: props.playback_status,
-                position: props.position,
-                last_active,
-            });
+            new_players.insert(
+                name.to_string(),
+                PlayerState {
+                    identity: name.to_string(),
+                    title: props.title,
+                    artist: props.artist,
+                    album: props.album,
+                    art_url: props.art_url,
+                    length: props.length,
+                    playback_status: props.playback_status,
+                    position: props.position,
+                    last_active,
+                },
+            );
         }
 
         let changed = {
@@ -153,16 +160,19 @@ impl MediaSource {
                 prev_sorted.sort_by(|a, b| a.0.cmp(b.0));
                 let mut new_sorted: Vec<(&String, &PlayerState)> = new_players.iter().collect();
                 new_sorted.sort_by(|a, b| a.0.cmp(b.0));
-                prev_sorted.iter().zip(new_sorted.iter()).any(|((k1, v1), (k2, v2))| {
-                    k1 != k2
-                        || v1.playback_status != v2.playback_status
-                        || v1.title != v2.title
-                        || v1.artist != v2.artist
-                        || v1.album != v2.album
-                        || v1.art_url != v2.art_url
-                        || v1.length != v2.length
-                        || v1.position != v2.position
-                })
+                prev_sorted
+                    .iter()
+                    .zip(new_sorted.iter())
+                    .any(|((k1, v1), (k2, v2))| {
+                        k1 != k2
+                            || v1.playback_status != v2.playback_status
+                            || v1.title != v2.title
+                            || v1.artist != v2.artist
+                            || v1.album != v2.album
+                            || v1.art_url != v2.art_url
+                            || v1.length != v2.length
+                            || v1.position != v2.position
+                    })
             }
         };
 
@@ -209,7 +219,8 @@ impl MediaSource {
 
     async fn select_active_player(&self) -> Option<PlayerState> {
         let players = self.players.read().await;
-        let playing = players.values()
+        let playing = players
+            .values()
             .filter(|p| p.playback_status == "playing")
             .max_by_key(|p| p.last_active);
 
@@ -217,7 +228,8 @@ impl MediaSource {
             return Some(p.clone());
         }
 
-        let paused = players.values()
+        let paused = players
+            .values()
             .filter(|p| p.playback_status == "paused")
             .max_by_key(|p| p.last_active);
 
@@ -225,9 +237,7 @@ impl MediaSource {
             return Some(p.clone());
         }
 
-        players.values()
-            .max_by_key(|p| p.last_active)
-            .cloned()
+        players.values().max_by_key(|p| p.last_active).cloned()
     }
 
     async fn fetch_player_properties(
@@ -235,33 +245,42 @@ impl MediaSource {
         conn: &Connection,
         bus_name: &str,
     ) -> Result<PlayerProps, Box<dyn std::error::Error>> {
-        let metadata_body = conn.call_method(
-            Some(bus_name),
-            "/org/mpris/MediaPlayer2",
-            Some("org.freedesktop.DBus.Properties"),
-            "Get",
-            &("org.mpris.MediaPlayer2.Player", "Metadata"),
-        ).await?.body();
+        let metadata_body = conn
+            .call_method(
+                Some(bus_name),
+                "/org/mpris/MediaPlayer2",
+                Some("org.freedesktop.DBus.Properties"),
+                "Get",
+                &("org.mpris.MediaPlayer2.Player", "Metadata"),
+            )
+            .await?
+            .body();
 
         let metadata: zvariant::Value = metadata_body.deserialize()?;
 
-        let status_body = conn.call_method(
-            Some(bus_name),
-            "/org/mpris/MediaPlayer2",
-            Some("org.freedesktop.DBus.Properties"),
-            "Get",
-            &("org.mpris.MediaPlayer2.Player", "PlaybackStatus"),
-        ).await?.body();
+        let status_body = conn
+            .call_method(
+                Some(bus_name),
+                "/org/mpris/MediaPlayer2",
+                Some("org.freedesktop.DBus.Properties"),
+                "Get",
+                &("org.mpris.MediaPlayer2.Player", "PlaybackStatus"),
+            )
+            .await?
+            .body();
 
         let playback_status: String = status_body.deserialize()?;
 
-        let position_body = conn.call_method(
-            Some(bus_name),
-            "/org/mpris/MediaPlayer2",
-            Some("org.freedesktop.DBus.Properties"),
-            "Get",
-            &("org.mpris.MediaPlayer2.Player", "Position"),
-        ).await?.body();
+        let position_body = conn
+            .call_method(
+                Some(bus_name),
+                "/org/mpris/MediaPlayer2",
+                Some("org.freedesktop.DBus.Properties"),
+                "Get",
+                &("org.mpris.MediaPlayer2.Player", "Position"),
+            )
+            .await?
+            .body();
 
         let position_us: u64 = position_body.deserialize()?;
 
@@ -288,7 +307,11 @@ impl MediaSource {
         })
     }
 
-    pub async fn send_command(&self, player: &str, method: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn send_command(
+        &self,
+        player: &str,
+        method: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let conn = match &self.dbus_conn {
             Some(c) => c,
             None => return Err("no D-Bus connection".into()),
@@ -301,13 +324,18 @@ impl MediaSource {
             Some("org.mpris.MediaPlayer2.Player"),
             method,
             &(),
-        ).await?;
+        )
+        .await?;
 
         tracing::debug!(player = %player, method = %method, "media command sent");
         Ok(())
     }
 
-    pub async fn seek(&self, player: &str, offset_us: i64) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn seek(
+        &self,
+        player: &str,
+        offset_us: i64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let conn = match &self.dbus_conn {
             Some(c) => c,
             None => return Err("no D-Bus connection".into()),
@@ -320,13 +348,18 @@ impl MediaSource {
             Some("org.mpris.MediaPlayer2.Player"),
             "Seek",
             &(offset_us),
-        ).await?;
+        )
+        .await?;
 
         tracing::debug!(player = %player, offset_us = %offset_us, "media seek sent");
         Ok(())
     }
 
-    pub async fn set_volume(&self, player: &str, volume: f64) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn set_volume(
+        &self,
+        player: &str,
+        volume: f64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let conn = match &self.dbus_conn {
             Some(c) => c,
             None => return Err("no D-Bus connection".into()),
@@ -339,14 +372,18 @@ impl MediaSource {
             Some("org.freedesktop.DBus.Properties"),
             "Set",
             &("org.mpris.MediaPlayer2.Player", "Volume", &volume),
-        ).await?;
+        )
+        .await?;
 
         tracing::debug!(player = %player, volume = %volume, "media volume set");
         Ok(())
     }
 
     pub async fn list_players(&self) -> Vec<String> {
-        self.players.read().await.keys()
+        self.players
+            .read()
+            .await
+            .keys()
             .map(|k| strip_bus_prefix(k))
             .collect()
     }
@@ -358,7 +395,8 @@ impl MediaSource {
         }
         let active = self.select_active_player().await;
         let names: Vec<String> = players.keys().cloned().collect();
-        let current_idx = active.as_ref()
+        let current_idx = active
+            .as_ref()
             .and_then(|a| names.iter().position(|n| n == &a.identity))
             .unwrap_or(0);
         let next_idx = (current_idx + 1) % names.len();
@@ -459,5 +497,7 @@ fn get_dict_u64(dict: &zvariant::Dict, key: &str) -> Option<u64> {
 }
 
 fn strip_bus_prefix(name: &str) -> String {
-    name.strip_prefix("org.mpris.MediaPlayer2.").unwrap_or(name).to_string()
+    name.strip_prefix("org.mpris.MediaPlayer2.")
+        .unwrap_or(name)
+        .to_string()
 }

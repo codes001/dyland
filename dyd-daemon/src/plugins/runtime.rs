@@ -87,15 +87,18 @@ impl PermSet {
     pub fn from_manifest(perms: &[String]) -> Self {
         let grants = perms
             .iter()
-            .filter_map(|p| p.split_once(':').map(|(s, t)| (s.to_string(), t.to_string())))
+            .filter_map(|p| {
+                p.split_once(':')
+                    .map(|(s, t)| (s.to_string(), t.to_string()))
+            })
             .collect();
         Self { grants }
     }
 
     fn scheme_target_matches(&self, scheme: &str, target: &str) -> bool {
-        self.grants.iter().any(|(s, t)| {
-            s == scheme && (t == "*" || t == target || target.ends_with(t.as_str()))
-        })
+        self.grants
+            .iter()
+            .any(|(s, t)| s == scheme && (t == "*" || t == target || target.ends_with(t.as_str())))
     }
 
     /// Any `api:` grant lets a plugin issue daemon commands.
@@ -148,7 +151,10 @@ pub struct HostContext {
 }
 
 impl HostContext {
-    pub fn new(event_broadcast: broadcast::Sender<IpcEnvelope>, rt: tokio::runtime::Handle) -> Self {
+    pub fn new(
+        event_broadcast: broadcast::Sender<IpcEnvelope>,
+        rt: tokio::runtime::Handle,
+    ) -> Self {
         let http = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
             .build()
@@ -210,7 +216,10 @@ impl SandboxedPlugin {
         if let Err(e) = self.store.set_fuel(fuel) {
             return CallResult::Trap(format!("failed to set fuel: {e}"));
         }
-        let func = match self.instance.get_typed_func::<(), i32>(&mut self.store, name) {
+        let func = match self
+            .instance
+            .get_typed_func::<(), i32>(&mut self.store, name)
+        {
             Ok(f) => f,
             Err(_) => return CallResult::Missing,
         };
@@ -275,12 +284,17 @@ impl WasmExecutor {
 }
 
 impl PluginExecutor for WasmExecutor {
-    fn init(&self, name: &str, manifest: &dyd_types::PluginManifest, dir: &Path) -> Result<(), String> {
+    fn init(
+        &self,
+        name: &str,
+        manifest: &dyd_types::PluginManifest,
+        dir: &Path,
+    ) -> Result<(), String> {
         let wasm_path = dir.join(&manifest.entry_point);
         let bytes = std::fs::read(&wasm_path)
             .map_err(|e| format!("cannot read {}: {e}", wasm_path.display()))?;
-        let module = Module::new(&self.engine, &bytes)
-            .map_err(|e| format!("invalid wasm module: {e}"))?;
+        let module =
+            Module::new(&self.engine, &bytes).map_err(|e| format!("invalid wasm module: {e}"))?;
 
         let mut linker = self.build_linker()?;
         // Tolerate stray imports (e.g. WASI stubs a toolchain may emit): they
@@ -310,7 +324,11 @@ impl PluginExecutor for WasmExecutor {
             .get_memory(&mut store, "memory")
             .ok_or_else(|| "plugin does not export `memory`".to_string())?;
 
-        let mut plugin = SandboxedPlugin { store, instance, memory };
+        let mut plugin = SandboxedPlugin {
+            store,
+            instance,
+            memory,
+        };
 
         // Optional `init` hook.
         match plugin.call_no_arg("init", LIFECYCLE_FUEL) {
@@ -468,63 +486,82 @@ fn write_out(caller: &mut Caller<'_, StoreState>, ptr: i32, cap: i32, data: &[u8
 /// Register all `"dyd"` imports on the linker. Kept as a free function so tests
 /// can build an executor and exercise the same registrations.
 fn register_host_functions(linker: &mut Linker<StoreState>) -> wasmtime::Result<()> {
-    linker.func_wrap("dyd", "log_info", |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
-        match read_string(&mut caller, ptr, len) {
-            Ok(msg) => {
-                tracing::info!(plugin = %caller.data().plugin, "{msg}");
-                0
+    linker.func_wrap(
+        "dyd",
+        "log_info",
+        |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
+            match read_string(&mut caller, ptr, len) {
+                Ok(msg) => {
+                    tracing::info!(plugin = %caller.data().plugin, "{msg}");
+                    0
+                }
+                Err(code) => code,
             }
-            Err(code) => code,
-        }
-    })?;
+        },
+    )?;
 
-    linker.func_wrap("dyd", "log_error", |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
-        match read_string(&mut caller, ptr, len) {
-            Ok(msg) => {
-                tracing::warn!(plugin = %caller.data().plugin, "{msg}");
-                0
+    linker.func_wrap(
+        "dyd",
+        "log_error",
+        |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
+            match read_string(&mut caller, ptr, len) {
+                Ok(msg) => {
+                    tracing::warn!(plugin = %caller.data().plugin, "{msg}");
+                    0
+                }
+                Err(code) => code,
             }
-            Err(code) => code,
-        }
-    })?;
+        },
+    )?;
 
-    linker.func_wrap("dyd", "emit_activity", |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
-        let json = match read_string(&mut caller, ptr, len) {
-            Ok(s) => s,
-            Err(code) => return code,
-        };
-        let content: serde_json::Value = match serde_json::from_str(&json) {
-            Ok(v) => v,
-            Err(_) => return STATUS_MALFORMED,
-        };
-        let state = caller.data();
-        let envelope = IpcEnvelope::event(IpcEvent::PluginActivity(ActivityPayload {
-            activity_id: uuid::Uuid::new_v4().to_string(),
-            source: state.plugin.clone(),
-            content,
-        }));
-        let _ = state.ctx.event_broadcast.send(envelope);
-        0
-    })?;
+    linker.func_wrap(
+        "dyd",
+        "emit_activity",
+        |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
+            let json = match read_string(&mut caller, ptr, len) {
+                Ok(s) => s,
+                Err(code) => return code,
+            };
+            let content: serde_json::Value = match serde_json::from_str(&json) {
+                Ok(v) => v,
+                Err(_) => return STATUS_MALFORMED,
+            };
+            let state = caller.data();
+            let envelope = IpcEnvelope::event(IpcEvent::PluginActivity(ActivityPayload {
+                activity_id: uuid::Uuid::new_v4().to_string(),
+                source: state.plugin.clone(),
+                content,
+            }));
+            let _ = state.ctx.event_broadcast.send(envelope);
+            0
+        },
+    )?;
 
-    linker.func_wrap("dyd", "send_command", |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
-        if !caller.data().perms.allows_api() {
-            return STATUS_DENIED;
-        }
-        let json = match read_string(&mut caller, ptr, len) {
-            Ok(s) => s,
-            Err(code) => return code,
-        };
-        let command: IpcCommand = match serde_json::from_str(&json) {
-            Ok(c) => c,
-            Err(_) => return STATUS_MALFORMED,
-        };
-        let state = caller.data();
-        // Publish the command envelope on the shared bus; the daemon's command
-        // routing consumes it (full round-trip wiring is deferred with dbus).
-        let _ = state.ctx.event_broadcast.send(IpcEnvelope::command(command));
-        0
-    })?;
+    linker.func_wrap(
+        "dyd",
+        "send_command",
+        |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
+            if !caller.data().perms.allows_api() {
+                return STATUS_DENIED;
+            }
+            let json = match read_string(&mut caller, ptr, len) {
+                Ok(s) => s,
+                Err(code) => return code,
+            };
+            let command: IpcCommand = match serde_json::from_str(&json) {
+                Ok(c) => c,
+                Err(_) => return STATUS_MALFORMED,
+            };
+            let state = caller.data();
+            // Publish the command envelope on the shared bus; the daemon's command
+            // routing consumes it (full round-trip wiring is deferred with dbus).
+            let _ = state
+                .ctx
+                .event_broadcast
+                .send(IpcEnvelope::command(command));
+            0
+        },
+    )?;
 
     linker.func_wrap(
         "dyd",
@@ -590,12 +627,16 @@ fn register_host_functions(linker: &mut Linker<StoreState>) -> wasmtime::Result<
 
     // Event subscription registration — no-op stub for 6-3 (guest-directed
     // event delivery is not wired yet). Reads and ignores the payload.
-    linker.func_wrap("dyd", "on_event", |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
-        match read_bytes(&mut caller, ptr, len) {
-            Ok(_) => 0,
-            Err(code) => code,
-        }
-    })?;
+    linker.func_wrap(
+        "dyd",
+        "on_event",
+        |mut caller: Caller<'_, StoreState>, ptr: i32, len: i32| -> i32 {
+            match read_bytes(&mut caller, ptr, len) {
+                Ok(_) => 0,
+                Err(code) => code,
+            }
+        },
+    )?;
 
     linker.func_wrap(
         "dyd",
