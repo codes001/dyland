@@ -38,6 +38,7 @@ deb: build-release
 	@cp resources/dyland.desktop dist/dyd_deb/usr/share/applications/dyland.desktop
 	@cp dyd-ui/src-tauri/icons/128x128.png dist/dyd_deb/usr/share/icons/hicolor/128x128/apps/dyd.png
 	@cp resources/dyd-daemon.service dist/dyd_deb/usr/lib/systemd/user/dyd-daemon.service
+	@cp resources/dyd-ui.service dist/dyd_deb/usr/lib/systemd/user/dyd-ui.service
 	@dpkg-deb --build dist/dyd_deb dist/dyland_0.1.0_amd64.deb
 	@echo "Created dist/dyland_0.1.0_amd64.deb"
 
@@ -58,14 +59,30 @@ install:
 	install -Dm644 resources/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
 	install -Dm644 dyd-ui/src-tauri/icons/128x128.png $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	install -Dm644 resources/dyd-daemon.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
+	install -Dm644 resources/dyd-ui.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
 	@-which update-desktop-database >/dev/null 2>&1 && update-desktop-database $(DESTDIR)$(DATADIR)/applications || true
 	@-which gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t $(DESTDIR)$(DATADIR)/icons/hicolor || true
 	@echo "dyland installed cleanly to $(PREFIX)."
+	@echo "Now enable autostart (as your normal user, NO sudo):"
+	@echo "  make enable"
+
+# Enable autostart for the current user: daemon + UI start at login,
+# restart on crash, and survive reboots until disabled.
+enable:
+	systemctl --user daemon-reload
+	systemctl --user enable --now dyd-daemon.service dyd-ui.service
+	@echo "dyland enabled. It will now appear at every login until you run 'make disable'."
+
+disable:
+	systemctl --user disable --now dyd-daemon.service dyd-ui.service
+	@echo "dyland disabled."
 
 uninstall:
+	systemctl --user disable --now dyd-daemon.service dyd-ui.service 2>/dev/null || true
 	rm -f $(DESTDIR)$(BINDIR)/dyd-daemon
 	rm -f $(DESTDIR)$(BINDIR)/dyd-ui
 	rm -f $(DESTDIR)$(DATADIR)/applications/dyland.desktop
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
+	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
 	@echo "dyland uninstalled."

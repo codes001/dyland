@@ -104,23 +104,25 @@ npm run dev -w dyd-ui
 
 ---
 
-### Option 2: Build & Run Production Release
+### Option 2: Build, Install & Enable (permanent — recommended)
 
-#### Step 1: Build binaries
+dyland becomes a permanent part of your desktop: it auto-starts at every login,
+survives reboots, auto-restarts if it crashes, and stays until you uninstall it.
+
 ```bash
-make build-release
+make build-release      # build daemon + island binaries
+sudo make install       # copy binaries + autostart services
+make enable             # NO sudo — register autostart for your login
 ```
 
-#### Step 2: Install system binaries & systemd service
+Done. The island appears at the top of your screen. Remove it any time:
+
 ```bash
-sudo make install
+make disable            # stop it and remove autostart
+sudo make uninstall     # remove all files
 ```
 
-#### Step 3: Enable and start the background daemon service
-```bash
-systemctl --user daemon-reload
-systemctl --user enable --now dyd-daemon.service
-```
+See [INSTALL.md](INSTALL.md) for details, .deb/AppImage options and troubleshooting.
 
 ---
 

@@ -1,0 +1,13 @@
+[Unit]
+Description=dyland Dynamic Island UI
+After=graphical-session.target dyd-daemon.service
+Wants=graphical-session.target dyd-daemon.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/dyd-ui
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=default.target

@@ -155,6 +155,11 @@ pub fn run() {
             }
             Ok(())
         })
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+            }
+        })
         .invoke_handler(tauri::generate_handler![connect_daemon, send_command])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
