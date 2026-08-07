@@ -90,6 +90,7 @@ pub async fn handle_connection(
                                 let _ = writer.write_all(&error_resp.serialize()).await;
                             }
                         }
+                        line.clear();
                     }
                     Err(e) => {
                         tracing::warn!(error = %e, "IPC connection read error");

@@ -28,6 +28,7 @@ export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "re
 const RECONNECT_INTERVAL = 2000;
 const MAX_RECONNECT_DELAY = 30000;
 const NOTIFICATION_DISMISS_MS = 5000;
+const ACTIVITY_DISMISS_MS = 6000;
 
 class IpcClient {
   private reconnectAttempt = 0;
@@ -37,21 +38,31 @@ class IpcClient {
   private unlistenMsg: UnlistenFn | null = null;
   private unlistenStatus: UnlistenFn | null = null;
   private notificationTimer: ReturnType<typeof setTimeout> | null = null;
+  private generation = 0;
 
   async connect() {
-    if (this.status === "connected" || this.status === "connecting") return;
+    if (this.status === "connected" || this.status === "connecting" || this.status === "reconnecting") return;
     this.setStatus("connecting");
     await this.doConnect();
   }
 
   private async doConnect() {
+    const gen = ++this.generation;
+    if (this.unlistenMsg) {
+      this.unlistenMsg();
+      this.unlistenMsg = null;
+    }
+    if (this.unlistenStatus) {
+      this.unlistenStatus();
+      this.unlistenStatus = null;
+    }
     const isTauriEnv = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
     if (!isTauriEnv) {
       // Standard browser preview mode: inject mock system state so the UI is fully interactive in browser
       this.setStatus("connected");
       this.handleDaemonMessage({
         type: "BatteryChanged",
-        payload: { state: "charging", percentage: 85.0, is_present: true, time_to_empty: null, time_to_full: 5400, health: 98.0 },
+        payload: { state: "discharging", percentage: 0.0, is_present: false, time_to_empty: null, time_to_full: null, health: null },
       });
       this.handleDaemonMessage({
         type: "WifiChanged",
@@ -69,19 +80,6 @@ class IpcClient {
         type: "BrightnessChanged",
         payload: { brightness: 80, has_backlight: true },
       });
-      this.handleDaemonMessage({
-        type: "MediaChanged",
-        payload: {
-          player: "spotify",
-          title: "Blinding Lights",
-          artist: "The Weeknd",
-          album: "After Hours",
-          art_url: null,
-          length: 200000,
-          position: 45000,
-          playback_status: "playing",
-        },
-      });
       return;
     }
 
@@ -97,12 +95,15 @@ class IpcClient {
           this.scheduleReconnect();
         }
       });
+      if (gen !== this.generation) return;
 
       const result = await invoke<string>("connect_daemon");
+      if (gen !== this.generation) return;
       if (result === "connecting") {
         this.setStatus("connecting");
       }
     } catch {
+      if (gen !== this.generation) return;
       this.scheduleReconnect();
     }
   }
@@ -140,6 +141,36 @@ class IpcClient {
       }
       case "QueueEmptied": {
         useActivityStore.getState().clear();
+        break;
+      }
+      case "PluginActivity": {
+        const p = envelope.payload as {
+          activity_id: string;
+          source: string;
+          content: unknown;
+        };
+        if (p?.activity_id) {
+          const content = (p.content ?? {}) as { severity?: string };
+          const priority =
+            content.severity === "critical"
+              ? "critical"
+              : content.severity === "error"
+                ? "high"
+                : "medium";
+          useActivityStore.getState().push({
+            id: p.activity_id,
+            source: p.source,
+            content: p.content,
+            priority,
+          });
+          const { state, isFullscreen } = usePillStore.getState();
+          if (!isFullscreen && (state === "dormant" || state === "hidden")) {
+            usePillStore.getState().transitionTo("active");
+          }
+          setTimeout(() => {
+            useActivityStore.getState().remove(p.activity_id);
+          }, ACTIVITY_DISMISS_MS);
+        }
         break;
       }
       case "NotificationReceived": {
@@ -346,6 +377,7 @@ class IpcClient {
   }
 
   disconnect() {
+    this.generation++;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

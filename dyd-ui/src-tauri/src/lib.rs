@@ -77,6 +77,7 @@ async fn connect_daemon(
         let mut buf_reader = BufReader::new(reader);
         let mut line = String::new();
 
+        let mut unexpected_close = false;
         loop {
             tokio::select! {
                 _ = shutdown_rx.changed() => {
@@ -85,27 +86,37 @@ async fn connect_daemon(
                 Some(envelope) = writer_rx.recv() => {
                     let data = envelope.serialize();
                     if writer_half.write_all(&data).await.is_err() {
+                        unexpected_close = true;
                         break;
                     }
                 }
                 result = buf_reader.read_line(&mut line) => {
                     match result {
-                        Ok(0) => break,
+                        Ok(0) => {
+                            unexpected_close = true;
+                            break;
+                        }
                         Ok(_) => {
                             if let Ok(envelope) = IpcEnvelope::deserialize(line.trim().as_bytes()) {
                                 let _ = app_handle.emit("daemon-message", &envelope);
                             }
+                            line.clear();
                         }
-                        Err(_) => break,
+                        Err(_) => {
+                            unexpected_close = true;
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        let _ = app_handle.emit(
-            "daemon-status",
-            serde_json::json!({"status": "disconnected"}),
-        );
+        if unexpected_close {
+            let _ = app_handle.emit(
+                "daemon-status",
+                serde_json::json!({"status": "disconnected"}),
+            );
+        }
     });
 
     Ok("connecting".to_string())

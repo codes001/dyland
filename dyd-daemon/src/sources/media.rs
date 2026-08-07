@@ -6,6 +6,8 @@ use zbus::Connection;
 
 use dyd_types::{IpcEnvelope, IpcEvent, MediaChangedPayload};
 
+const GHOST_PLAYBACK_TIMEOUT: Duration = Duration::from_secs(3);
+
 #[derive(Debug, Clone)]
 struct PlayerState {
     identity: String,
@@ -17,6 +19,7 @@ struct PlayerState {
     playback_status: String,
     position: u64,
     last_active: tokio::time::Instant,
+    position_stable_since: Option<tokio::time::Instant>,
 }
 
 pub struct MediaSource {
@@ -121,14 +124,60 @@ impl MediaSource {
                 tracing::info!(player = %name, status = %props.playback_status, "media player discovered");
             }
 
-            let was_active = self.players.read().await.contains_key(name);
-            let last_active = if props.playback_status == "playing" {
+            let stored = self.players.read().await.get(name).cloned();
+            let was_active = stored.is_some();
+
+            let position_advanced = stored
+                .as_ref()
+                .map(|s| s.position != props.position)
+                .unwrap_or(true);
+            let just_started = stored
+                .as_ref()
+                .map(|s| s.playback_status != "playing")
+                .unwrap_or(true);
+
+            let effective_playing = if props.playback_status == "playing" {
+                if position_advanced || just_started || props.length == 0 {
+                    true
+                } else {
+                    let stable_since = stored
+                        .as_ref()
+                        .and_then(|s| s.position_stable_since)
+                        .unwrap_or(now);
+                    now.duration_since(stable_since) < GHOST_PLAYBACK_TIMEOUT
+                }
+            } else {
+                false
+            };
+
+            let effective_status = if effective_playing {
+                "playing"
+            } else if props.playback_status == "stopped" {
+                "stopped"
+            } else {
+                "paused"
+            };
+
+            let position_stable_since = if props.playback_status == "playing"
+                && effective_status == "playing"
+                && !position_advanced
+                && !just_started
+            {
+                Some(
+                    stored
+                        .as_ref()
+                        .and_then(|s| s.position_stable_since)
+                        .unwrap_or(now),
+                )
+            } else {
+                None
+            };
+
+            let last_active = if effective_status == "playing" {
                 now
             } else if was_active {
-                self.players
-                    .read()
-                    .await
-                    .get(name)
+                stored
+                    .as_ref()
                     .map(|p| p.last_active)
                     .unwrap_or(now)
             } else {
@@ -144,9 +193,10 @@ impl MediaSource {
                     album: props.album,
                     art_url: props.art_url,
                     length: props.length,
-                    playback_status: props.playback_status,
+                    playback_status: effective_status.to_string(),
                     position: props.position,
                     last_active,
+                    position_stable_since,
                 },
             );
         }
