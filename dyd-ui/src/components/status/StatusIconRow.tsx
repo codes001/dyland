@@ -30,7 +30,21 @@ export default function StatusIconRow() {
     return isStatusFeatureActive(f, system);
   });
 
-  if (activeFeatures.length === 0) return null;
+  if (activeFeatures.length === 0) {
+    return (
+      <div
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.85)",
+          flexShrink: 0,
+        }}
+        role="img"
+        aria-label="Idle"
+      />
+    );
+  }
 
   const openFeature = (feature: StatusFeature) => {
     selectFeature(feature);

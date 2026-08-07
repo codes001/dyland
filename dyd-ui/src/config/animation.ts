@@ -27,9 +27,9 @@ export const DURATION = {
 };
 
 export const PILL_SIZE = {
-  dormant: { width: 126, height: 36 },
-  active: { width: 180, height: 36 },
-  notification: { width: 200, height: 36 },
+  dormant: { width: 126, height: 40 },
+  active: { width: 180, height: 40 },
+  notification: { width: 200, height: 40 },
   media: { width: 230, height: 40 },
   expanded: { width: 380, height: 200 },
 };
