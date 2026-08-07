@@ -144,7 +144,7 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "4px 14px",
+              padding: "4px 16px",
             }}
           >
             {children}

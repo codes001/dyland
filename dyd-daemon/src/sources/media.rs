@@ -55,7 +55,7 @@ impl MediaSource {
     }
 
     pub async fn start_polling(self: Arc<Self>, mut shutdown_rx: watch::Receiver<()>) {
-        let mut tick = interval(Duration::from_secs(1));
+        let mut tick = interval(Duration::from_millis(250));
         tick.tick().await;
 
         loop {
