@@ -41,8 +41,14 @@ That's it. The island appears at the top of your screen within a few seconds.
 #### What `make enable` does
 - Starts the daemon (`dyd-daemon.service`) and the island window (`dyd-ui.service`) now
 - Registers both as user systemd services started at every login
-- Both auto-restart if they crash (`Restart=always` for the UI, `Restart=on-failure` for the daemon)
+- Both auto-restart if they crash (`Restart=on-failure` for both)
 - The island window cannot be closed by accident (closing it is ignored)
+
+#### Stopping it without uninstalling
+The app shows a tray icon (Restart / Quit). Choose **Quit** to stop the island
+until your next login (or `systemctl --user start dyd-ui.service` to bring it
+back immediately). Crashes still restart automatically — only an explicit Quit
+stops it.
 
 ---
 

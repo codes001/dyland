@@ -6,7 +6,8 @@ Wants=graphical-session.target dyd-daemon.service
 [Service]
 Type=simple
 ExecStart=/usr/bin/dyd-ui
-Restart=always
+# on-failure: crashes/signals restart it, but a clean tray "Quit" stays quit
+Restart=on-failure
 RestartSec=3s
 
 [Install]

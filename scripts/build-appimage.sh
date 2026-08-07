@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Building dyland AppImage..."
+VERSION="${VERSION:-0.1.0}"
+echo "==> Building dyland AppImage (v${VERSION})..."
 
 APPDIR="dist/dyland.AppDir"
 mkdir -p "${APPDIR}/usr/bin"
@@ -32,8 +33,8 @@ EOF
 chmod +x "${APPDIR}/AppRun"
 
 if command -v appimagetool >/dev/null 2>&1; then
-    appimagetool "${APPDIR}" "dist/dyland-0.1.0-x86_64.AppImage"
-    echo "==> Created dist/dyland-0.1.0-x86_64.AppImage"
+    appimagetool "${APPDIR}" "dist/dyland-${VERSION}-x86_64.AppImage"
+    echo "==> Created dist/dyland-${VERSION}-x86_64.AppImage"
 else
     echo "==> AppDir structure prepared in ${APPDIR} (install appimagetool to package into .AppImage binary)"
 fi

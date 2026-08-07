@@ -5,6 +5,8 @@ use tokio::net::UnixStream;
 use tokio::sync::watch;
 
 use dyd_types::{IpcCommand, IpcEnvelope};
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager};
 
 struct DaemonClient {
@@ -153,6 +155,28 @@ pub fn run() {
                 let _ = window.set_size(tauri::PhysicalSize::new(monitor_size.width, 100));
                 let _ = window.set_position(tauri::PhysicalPosition::new(0, 0));
             }
+
+            let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&restart, &quit])?;
+
+            let icon = app.default_window_icon().cloned().unwrap_or_else(|| {
+                tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))
+                    .expect("embedded tray icon to be valid")
+            });
+
+            TrayIconBuilder::with_id("dyland-tray")
+                .icon(icon)
+                .tooltip("dyland Dynamic Island")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => app.exit(0),
+                    "restart" => app.restart(),
+                    _ => {}
+                })
+                .build(app)?;
+
             Ok(())
         })
         .on_window_event(|_window, event| {

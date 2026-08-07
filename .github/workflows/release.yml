@@ -26,10 +26,12 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev dpkg-dev
 
       - name: Build Release Artifacts
+        env:
+          VERSION: ${{ github.ref_name }}
         run: |
           npm ci
-          make deb
-          make appimage
+          make deb VERSION="${VERSION#v}"
+          VERSION="${VERSION#v}" make appimage
 
       - name: Generate Checksums
         run: |
@@ -40,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/dyland_0.1.0_amd64.deb
-            dist/dyland-0.1.0-x86_64.AppImage
+            dist/dyland_*.deb
+            dist/dyland-*.AppImage
             dist/SHA256SUMS.txt
           generate_release_notes: true

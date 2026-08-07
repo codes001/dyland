@@ -1,8 +1,9 @@
-.PHONY: dev build build-release lint format format-check test clean deb appimage install uninstall
+.PHONY: dev build build-release lint format format-check test clean deb appimage install enable disable uninstall
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 DATADIR ?= $(PREFIX)/share
+VERSION ?= 0.1.0
 
 dev:
 	npm run dev
@@ -32,18 +33,18 @@ deb: build-release
 	@echo "Building Debian package..."
 	@which dpkg-deb >/dev/null 2>&1 || (echo "dpkg-deb is required" && exit 1)
 	@mkdir -p dist/dyd_deb/DEBIAN dist/dyd_deb/usr/bin dist/dyd_deb/usr/share/applications dist/dyd_deb/usr/share/icons/hicolor/128x128/apps dist/dyd_deb/usr/lib/systemd/user
-	@printf "Package: dyland\nVersion: 0.1.0\nArchitecture: amd64\nMaintainer: dyland Maintainers <maintainers@dyland.org>\nDepends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libayatana-appindicator3-1\nSection: utils\nPriority: optional\nDescription: Dynamic Island for Linux Desktops\n Smooth, responsive overlay island bringing notifications, status, and media controls to Linux.\n" > dist/dyd_deb/DEBIAN/control
+	@printf "Package: dyland\nVersion: $(VERSION)\nArchitecture: amd64\nMaintainer: dyland Maintainers <maintainers@dyland.org>\nDepends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libayatana-appindicator3-1\nSection: utils\nPriority: optional\nDescription: Dynamic Island for Linux Desktops\n Smooth, responsive overlay island bringing notifications, status, and media controls to Linux.\n" > dist/dyd_deb/DEBIAN/control
 	@cp target/release/dyd-daemon dist/dyd_deb/usr/bin/dyd-daemon
 	@if [ -f target/release/dyd-ui-tauri ]; then cp target/release/dyd-ui-tauri dist/dyd_deb/usr/bin/dyd-ui; elif [ -f target/release/dyland ]; then cp target/release/dyland dist/dyd_deb/usr/bin/dyd-ui; fi
 	@cp resources/dyland.desktop dist/dyd_deb/usr/share/applications/dyland.desktop
 	@cp dyd-ui/src-tauri/icons/128x128.png dist/dyd_deb/usr/share/icons/hicolor/128x128/apps/dyd.png
 	@cp resources/dyd-daemon.service dist/dyd_deb/usr/lib/systemd/user/dyd-daemon.service
 	@cp resources/dyd-ui.service dist/dyd_deb/usr/lib/systemd/user/dyd-ui.service
-	@dpkg-deb --build dist/dyd_deb dist/dyland_0.1.0_amd64.deb
-	@echo "Created dist/dyland_0.1.0_amd64.deb"
+	@dpkg-deb --build dist/dyd_deb dist/dyland_$(VERSION)_amd64.deb
+	@echo "Created dist/dyland_$(VERSION)_amd64.deb"
 
 appimage: build-release
-	@bash scripts/build-appimage.sh
+	@VERSION=$(VERSION) bash scripts/build-appimage.sh
 
 clean:
 	cargo clean && rm -rf dist/
