@@ -176,10 +176,7 @@ impl MediaSource {
             let last_active = if effective_status == "playing" {
                 now
             } else if was_active {
-                stored
-                    .as_ref()
-                    .map(|p| p.last_active)
-                    .unwrap_or(now)
+                stored.as_ref().map(|p| p.last_active).unwrap_or(now)
             } else {
                 now
             };
