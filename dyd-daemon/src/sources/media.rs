@@ -319,7 +319,14 @@ impl MediaSource {
             .await?
             .body();
 
-        let playback_status: String = status_body.deserialize()?;
+        let playback_status = match status_body.deserialize::<zvariant::Value>()? {
+            zvariant::Value::Str(s) => s.to_string().to_lowercase(),
+            zvariant::Value::Value(inner) => match *inner {
+                zvariant::Value::Str(s) => s.to_string().to_lowercase(),
+                _ => return Err("PlaybackStatus is not a string".into()),
+            },
+            _ => return Err("PlaybackStatus is not a string".into()),
+        };
 
         let position_body = conn
             .call_method(
@@ -332,7 +339,16 @@ impl MediaSource {
             .await?
             .body();
 
-        let position_us: u64 = position_body.deserialize()?;
+        let position_us = match position_body.deserialize::<zvariant::Value>()? {
+            zvariant::Value::I64(v) => v.max(0) as u64,
+            zvariant::Value::U64(v) => v,
+            zvariant::Value::Value(inner) => match *inner {
+                zvariant::Value::I64(v) => v.max(0) as u64,
+                zvariant::Value::U64(v) => v,
+                _ => 0,
+            },
+            _ => 0,
+        };
 
         let dict = match metadata.downcast_ref::<zvariant::Dict>() {
             Ok(d) => d,
@@ -475,7 +491,10 @@ impl MediaSource {
 
     async fn emit_media_changed(&self, payload: MediaChangedPayload) {
         let envelope = IpcEnvelope::event(IpcEvent::MediaChanged(payload));
-        let _ = self.event_broadcast.send(envelope);
+        match self.event_broadcast.send(envelope) {
+            Ok(n) => tracing::debug!(receivers = n, "media broadcast sent"),
+            Err(e) => tracing::warn!(error = %e, "media broadcast send failed"),
+        }
     }
 
     async fn emit_media_stopped(&self) {

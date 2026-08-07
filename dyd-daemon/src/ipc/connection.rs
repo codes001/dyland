@@ -33,7 +33,9 @@ fn spawn_broadcast_forwarder(
         loop {
             match rx.recv().await {
                 Ok(msg) => {
-                    if event_tx.try_send(msg).is_err() {
+                    tracing::debug!(kind = ?msg.kind, "forwarder got message");
+                    if let Err(e) = event_tx.try_send(msg) {
+                        tracing::warn!(error = %e, "forwarder try_send failed, stopping");
                         break;
                     }
                 }
@@ -99,6 +101,7 @@ pub async fn handle_connection(
                 }
             }
             Some(envelope) = event_rx.recv() => {
+                tracing::debug!(kind = ?envelope.kind, "writing event to socket");
                 if writer.write_all(&envelope.serialize()).await.is_err() {
                     break;
                 }

@@ -123,17 +123,12 @@ impl Daemon {
         self.setup_logging();
         tracing::info!(pid = std::process::id(), "dyd-daemon starting");
 
-        // Critical path step 1: Bind IPC server early so UI can connect immediately
-        self.start_ipc_server().await;
-        let ipc_ready_ms = launch_start.elapsed().as_millis();
-        tracing::info!(elapsed_ms = ipc_ready_ms, "IPC server bound & listening");
-
-        // Step 2: Establish D-Bus connections
+        // Step 1: Establish D-Bus connections
         self.connect_dbus().await;
         let dbus_ready_ms = launch_start.elapsed().as_millis();
         tracing::info!(elapsed_ms = dbus_ready_ms, "D-Bus connections established");
 
-        // Step 3: Initialize sources & listeners
+        // Step 2: Initialize sources & listeners
         self.init_media_source().await;
         self.init_notification_source().await;
         self.init_battery_source().await;
@@ -151,6 +146,12 @@ impl Daemon {
         self.start_volume_poller().await;
         self.start_brightness_poller().await;
         self.init_plugins().await;
+
+        // Bind IPC server only after all sources exist, so the SourceContext
+        // (built once) carries every source's broadcast channel to connections.
+        self.start_ipc_server().await;
+        let ipc_ready_ms = launch_start.elapsed().as_millis();
+        tracing::info!(elapsed_ms = ipc_ready_ms, "IPC server bound & listening");
 
         let update_checker = Arc::new(updater::UpdateChecker::new(
             env!("CARGO_PKG_VERSION"),

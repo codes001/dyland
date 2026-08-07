@@ -39,6 +39,12 @@ pub struct SourceContext {
 impl SourceContext {
     pub fn broadcast_receivers(&self) -> Vec<broadcast::Receiver<IpcEnvelope>> {
         let mut receivers = Vec::new();
+        tracing::debug!(
+            media = self.media_broadcast.is_some(),
+            config = self.config_broadcast.is_some(),
+            plugin = self.plugin_broadcast.is_some(),
+            "building broadcast receivers"
+        );
         if let Some(tx) = &self.media_broadcast {
             receivers.push(tx.subscribe());
         }
