@@ -46,12 +46,26 @@ function App() {
       // window.screen instead, which reports the full screen size on both
       // Wayland and X11. The pill centers itself at 50% of the window, so
       // a full-width window puts it at true top-center of the display.
-      const dpr = window.devicePixelRatio || 1;
-      const win = getCurrentWindow();
-      void win.setSize(
-        new PhysicalSize(Math.round(window.screen.width * dpr), Math.round(100 * dpr)),
-      );
-      void win.setPosition(new PhysicalPosition(0, 0));
+      const applyGeometry = () => {
+        const dpr = window.devicePixelRatio || 1;
+        const win = getCurrentWindow();
+        void win.setSize(
+          new PhysicalSize(Math.round(window.screen.width * dpr), Math.round(100 * dpr)),
+        );
+        // The position request can be dropped if the window is not yet
+        // mapped, which leaves the island sitting lower than the top edge.
+        // Retry after the window has had time to appear on screen.
+        void win.setPosition(new PhysicalPosition(0, 0));
+        // Compositors (e.g. GNOME) may still place the window below the
+        // top edge, so read the actual position and pull the window's top
+        // edge up to the screen top. If the compositor clamps negative
+        // coordinates to 0, the window ends up at the top edge anyway.
+        void win.outerPosition().then((p) => {
+          if (p.y > 0) void win.setPosition(new PhysicalPosition(0, -p.y));
+        });
+      };
+      applyGeometry();
+      [300, 1000, 2500].forEach((ms) => setTimeout(applyGeometry, ms));
     }
     connectionStore.init();
     return () => connectionStore.cleanup();
