@@ -74,6 +74,11 @@ enable:
 	systemctl --user enable --now dyd-daemon.service dyd-ui.service
 	@echo "dyland enabled. It will now appear at every login until you run 'make disable'."
 
+# Install the GNOME Shell extension that renders the island inside the shell
+# (above every window, at the top of the screen). Requires a logout/login.
+install-shell:
+	bash dyd-shell/install.sh
+
 disable:
 	systemctl --user disable --now dyd-daemon.service dyd-ui.service
 	@echo "dyland disabled."

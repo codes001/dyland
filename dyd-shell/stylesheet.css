@@ -1,0 +1,78 @@
+/* Dyland dynamic island styles. The pill is drawn inside the shell UI, so
+ * it renders above every window and above the top panel. */
+.dyd-anchor {
+    background-color: transparent;
+}
+
+.dyd-pill {
+    background-color: rgba(0, 0, 0, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 18px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dyd-content {
+    padding: 0 16px;
+}
+
+.dyd-label {
+    color: #ffffff;
+    font-size: 12px;
+}
+
+.dyd-label-title {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.dyd-label-muted {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+}
+
+.dyd-icon {
+    icon-size: 16px;
+    color: #ffffff;
+}
+
+.dyd-row {
+    spacing: 10px;
+}
+
+.dyd-row-wide {
+    spacing: 14px;
+}
+
+.dyd-column {
+    spacing: 6px;
+}
+
+.dyd-btn {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px 12px;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+.dyd-btn:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+.dyd-btn:active {
+    background-color: rgba(255, 255, 255, 0.24);
+}
+
+.dyd-progress {
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.25);
+    min-height: 6px;
+}
+
+.dyd-progress-fill {
+    border-radius: 4px;
+    background-color: #ffffff;
+    min-height: 6px;
+}

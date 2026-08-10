@@ -1,0 +1,8 @@
+{
+  "uuid": "dyland@dyland.app",
+  "name": "Dyland Dynamic Island",
+  "description": "Phone-style dynamic island rendered inside the shell: notifications, media playback and system status in a pill at the very top of the screen, above every window.",
+  "shell-version": ["45", "46", "47", "48"],
+  "version": 1,
+  "url": "https://github.com/codes001/dyland"
+}
