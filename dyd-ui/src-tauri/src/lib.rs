@@ -141,6 +141,25 @@ async fn send_command(
     tx.send(envelope).await.map_err(|e| e.to_string())
 }
 
+fn size_island_window(window: &tauri::WebviewWindow) -> bool {
+    // Full-width transparent overlay: the pill itself is centered by the
+    // UI (left: 50%), so the window just needs to span the top edge of
+    // the monitor it lives on.
+    match window.primary_monitor() {
+        Ok(Some(monitor)) => {
+            let monitor_size = monitor.size();
+            let monitor_position = monitor.position();
+            let _ = window.set_size(tauri::PhysicalSize::new(monitor_size.width, 100));
+            let _ = window.set_position(tauri::PhysicalPosition::new(
+                monitor_position.x,
+                monitor_position.y,
+            ));
+            true
+        }
+        _ => false,
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -150,17 +169,39 @@ pub fn run() {
                 Some(w) => w,
                 None => return Ok(()),
             };
-            if let Ok(Some(monitor)) = window.primary_monitor() {
-                let monitor_size = monitor.size();
-                let monitor_position = monitor.position();
-                // Full-width transparent overlay: the pill itself is centered
-                // by the UI (left: 50%), so the window just needs to span the
-                // top edge of the monitor it lives on.
-                let _ = window.set_size(tauri::PhysicalSize::new(monitor_size.width, 100));
-                let _ = window.set_position(tauri::PhysicalPosition::new(
-                    monitor_position.x,
-                    monitor_position.y,
-                ));
+            size_island_window(&window);
+
+            // The primary monitor can be reported late (login via systemd,
+            // Wayland surface not yet realized). If the initial sizing pass
+            // failed, keep retrying on the main thread so the island never
+            // stays stuck as the default 400x100 box in the top-left corner.
+            if !size_island_window(&window) {
+                let handle = app.handle().clone();
+                let done = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let done_task = done.clone();
+                tauri::async_runtime::spawn(async move {
+                    for _ in 0..30 {
+                        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                        if done.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
+                        let handle_closure = handle.clone();
+                        let handle_call = handle.clone();
+                        let done = done_task.clone();
+                        if handle_call
+                            .run_on_main_thread(move || {
+                                if let Some(w) = handle_closure.get_webview_window("main") {
+                                    if size_island_window(&w) {
+                                        done.store(true, std::sync::atomic::Ordering::Relaxed);
+                                    }
+                                }
+                            })
+                            .is_err()
+                        {
+                            break;
+                        }
+                    }
+                });
             }
 
             let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
