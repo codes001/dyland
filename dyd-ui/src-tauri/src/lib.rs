@@ -7,7 +7,7 @@ use tokio::sync::watch;
 use dyd_types::{IpcCommand, IpcEnvelope};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 struct DaemonClient {
     writer: Option<tokio::sync::mpsc::Sender<IpcEnvelope>>,
@@ -166,6 +166,19 @@ pub fn run() {
                     _ => {}
                 })
                 .build(app)?;
+
+            // Diagnostics: report the window geometry a few times after
+            // launch so we can verify the island hangs from the top edge
+            // (the webview applies its own sizing shortly after start).
+            let window = app.get_webview_window("main").expect("main window");
+            tauri::async_runtime::spawn(async move {
+                for _ in 0..3 {
+                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    let pos = window.outer_position();
+                    let size = window.outer_size();
+                    eprintln!("DYLD-GEO pos={pos:?} size={size:?}");
+                }
+            });
 
             Ok(())
         })
