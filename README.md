@@ -149,6 +149,27 @@ For more detailed setup options, refer to [`INSTALL.md`](INSTALL.md).
 
 ---
 
+## Updating dyland
+
+Replace `<version>` with the latest release version (e.g. `0.1.1`).
+
+**Via `.deb`:**
+```bash
+sudo dpkg -i dyland_<version>_amd64.deb && systemctl --user restart dyd-daemon dyd-ui
+```
+
+**Via source (`make install`):**
+```bash
+git pull && make build-release && sudo make install && systemctl --user restart dyd-daemon dyd-ui
+```
+
+**Via AppImage:**
+```bash
+chmod +x dyland-<version>-x86_64.AppImage && ./dyland-<version>-x86_64.AppImage
+```
+
+---
+
 ## Project Commands
 
 | Command | Action |
