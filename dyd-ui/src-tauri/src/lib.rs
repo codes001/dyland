@@ -152,8 +152,15 @@ pub fn run() {
             };
             if let Ok(Some(monitor)) = window.primary_monitor() {
                 let monitor_size = monitor.size();
+                let monitor_position = monitor.position();
+                // Full-width transparent overlay: the pill itself is centered
+                // by the UI (left: 50%), so the window just needs to span the
+                // top edge of the monitor it lives on.
                 let _ = window.set_size(tauri::PhysicalSize::new(monitor_size.width, 100));
-                let _ = window.set_position(tauri::PhysicalPosition::new(0, 0));
+                let _ = window.set_position(tauri::PhysicalPosition::new(
+                    monitor_position.x,
+                    monitor_position.y,
+                ));
             }
 
             let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;

@@ -58,9 +58,12 @@ body,
   overflow: hidden;
 }
 
-body[data-tauri="true"],
-body[data-tauri="true"] html,
-body[data-tauri="true"] #root {
+/* Inside the Tauri window the html canvas must be transparent too —
+ * html's background propagates to the viewport, so the island would
+ * otherwise render as an opaque bar. */
+html[data-tauri="true"],
+html[data-tauri="true"] body,
+html[data-tauri="true"] #root {
   background: transparent !important;
 }
 
