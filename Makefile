@@ -14,7 +14,7 @@ build:
 build-release:
 	cargo build --release
 	cd dyd-ui && npm run build
-	cargo build --release --manifest-path dyd-ui/src-tauri/Cargo.toml
+	cargo build --release --features custom-protocol --manifest-path dyd-ui/src-tauri/Cargo.toml
 
 lint:
 	cargo clippy -- -D warnings
@@ -53,7 +53,7 @@ install:
 	@if [ ! -f target/release/dyd-daemon ] || [ ! -f target/release/dyd-ui-tauri ]; then \
 		echo "Release binaries not found in target/release/. Running build-release..."; \
 		PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release || (echo "Failed to run cargo. Please run 'make build-release' as your normal user first, then run 'sudo make install'." && exit 1); \
-		cd dyd-ui && npm run build && PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release --manifest-path src-tauri/Cargo.toml; \
+		cd dyd-ui && npm run build && PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml; \
 	fi
 	install -Dm755 target/release/dyd-daemon $(DESTDIR)$(BINDIR)/dyd-daemon
 	install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui
