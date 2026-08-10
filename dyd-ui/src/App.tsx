@@ -21,6 +21,7 @@ import { useConfigStore } from "./stores/config-store";
 import { useMediaStore } from "./stores/media-store";
 import { useActivityStore } from "./stores/activity-store";
 import { ipcClient } from "./ipc/client";
+import { getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
 
 function App() {
   const state = usePillStore((s) => s.state);
@@ -40,6 +41,17 @@ function App() {
   useEffect(() => {
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       document.body.dataset.tauri = "true";
+      // Size the island to span the top edge of the screen and pin it to
+      // the origin. primary_monitor() returns None on Wayland, so we use
+      // window.screen instead, which reports the full screen size on both
+      // Wayland and X11. The pill centers itself at 50% of the window, so
+      // a full-width window puts it at true top-center of the display.
+      const dpr = window.devicePixelRatio || 1;
+      const win = getCurrentWindow();
+      void win.setSize(
+        new PhysicalSize(Math.round(window.screen.width * dpr), Math.round(100 * dpr)),
+      );
+      void win.setPosition(new PhysicalPosition(0, 0));
     }
     connectionStore.init();
     return () => connectionStore.cleanup();
