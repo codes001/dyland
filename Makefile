@@ -32,7 +32,7 @@ test:
 deb: build-release
 	@echo "Building Debian package..."
 	@which dpkg-deb >/dev/null 2>&1 || (echo "dpkg-deb is required" && exit 1)
-	@mkdir -p dist/dyd_deb/DEBIAN dist/dyd_deb/usr/bin dist/dyd_deb/usr/share/applications dist/dyd_deb/usr/share/icons/hicolor/128x128/apps dist/dyd_deb/usr/lib/systemd/user
+	@mkdir -p dist/dyd_deb/DEBIAN dist/dyd_deb/usr/bin dist/dyd_deb/usr/share/applications dist/dyd_deb/usr/share/icons/hicolor/128x128/apps dist/dyd_deb/usr/lib/systemd/user dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app
 	@printf "Package: dyland\nVersion: $(VERSION)\nArchitecture: amd64\nMaintainer: dyland Maintainers <maintainers@dyland.org>\nDepends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libayatana-appindicator3-1\nSection: utils\nPriority: optional\nDescription: Dynamic Island for Linux Desktops\n Smooth, responsive overlay island bringing notifications, status, and media controls to Linux.\n" > dist/dyd_deb/DEBIAN/control
 	@cp target/release/dyd-daemon dist/dyd_deb/usr/bin/dyd-daemon
 	@if [ -f target/release/dyd-ui-tauri ]; then cp target/release/dyd-ui-tauri dist/dyd_deb/usr/bin/dyd-ui; elif [ -f target/release/dyland ]; then cp target/release/dyland dist/dyd_deb/usr/bin/dyd-ui; fi
@@ -40,6 +40,9 @@ deb: build-release
 	@cp dyd-ui/src-tauri/icons/128x128.png dist/dyd_deb/usr/share/icons/hicolor/128x128/apps/dyd.png
 	@cp resources/dyd-daemon.service dist/dyd_deb/usr/lib/systemd/user/dyd-daemon.service
 	@cp resources/dyd-ui.service dist/dyd_deb/usr/lib/systemd/user/dyd-ui.service
+	@cp dyd-shell/metadata.json dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/metadata.json
+	@cp dyd-shell/extension.js dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/extension.js
+	@cp dyd-shell/stylesheet.css dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/stylesheet.css
 	@dpkg-deb --build dist/dyd_deb dist/dyland_$(VERSION)_amd64.deb
 	@echo "Created dist/dyland_$(VERSION)_amd64.deb"
 
@@ -59,6 +62,9 @@ install:
 	install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui
 	install -Dm644 resources/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
 	install -Dm644 dyd-ui/src-tauri/icons/128x128.png $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
+	install -Dm644 dyd-shell/metadata.json $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/metadata.json
+	install -Dm644 dyd-shell/extension.js $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/extension.js
+	install -Dm644 dyd-shell/stylesheet.css $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/stylesheet.css
 	install -Dm644 resources/dyd-daemon.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
 	install -Dm644 resources/dyd-ui.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
 	@-which update-desktop-database >/dev/null 2>&1 && update-desktop-database $(DESTDIR)$(DATADIR)/applications || true
@@ -91,4 +97,5 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
 	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
+	rm -rf $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app
 	@echo "dyland uninstalled."
