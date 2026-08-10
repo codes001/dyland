@@ -155,7 +155,7 @@ Replace `<version>` with the latest release version (e.g. `0.1.1`).
 
 **Via `.deb`:**
 ```bash
-sudo dpkg -i dyland_<version>_amd64.deb && systemctl --user restart dyd-daemon dyd-ui
+sudo dpkg -i dyland_0.1.1_amd64.deb && systemctl --user restart dyd-daemon dyd-ui
 ```
 
 **Via source (`make install`):**
