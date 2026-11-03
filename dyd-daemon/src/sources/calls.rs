@@ -291,10 +291,7 @@ struct StreamHit {
     view: View,
 }
 
-fn classify_playback(
-    corked: bool,
-    properties: &HashMap<String, String>,
-) -> Option<StreamHit> {
+fn classify_playback(corked: bool, properties: &HashMap<String, String>) -> Option<StreamHit> {
     if corked {
         return None;
     }
@@ -329,7 +326,9 @@ fn classify_playback(
         return None;
     };
 
-    let app_name = known.unwrap_or(if app.is_empty() { "Call" } else { app }).to_string();
+    let app_name = known
+        .unwrap_or(if app.is_empty() { "Call" } else { app })
+        .to_string();
     let summary = if phrase && !media.is_empty() && text_mentions_call(media) {
         media.to_string()
     } else {
@@ -364,8 +363,8 @@ pub async fn serve_island(conn: zbus::Connection, hub: Arc<CallHub>) -> zbus::Re
     conn.object_server()
         .at("/app/dyland/Island", IslandIface { hub })
         .await?;
-    let reply = conn.request_name("app.dyland").await?;
-    tracing::info!(?reply, "incoming-call API is on the session bus");
+    conn.request_name("app.dyland").await?;
+    tracing::info!("incoming-call API is on the session bus");
     Ok(())
 }
 
@@ -387,7 +386,10 @@ pub async fn watch_audio(hub: Arc<CallHub>, mut shutdown_rx: watch::Receiver<()>
     }
 }
 
-async fn audio_session(hub: Arc<CallHub>, mut shutdown_rx: watch::Receiver<()>) -> std::io::Result<()> {
+async fn audio_session(
+    hub: Arc<CallHub>,
+    mut shutdown_rx: watch::Receiver<()>,
+) -> std::io::Result<()> {
     let mut child = Command::new("pactl")
         .arg("subscribe")
         .stdout(std::process::Stdio::piped())
@@ -475,7 +477,9 @@ async fn apply_streams(
         *pending_key = key;
         *pending_since = Some(Instant::now());
     }
-    let elapsed = pending_since.map(|since| since.elapsed()).unwrap_or_default();
+    let elapsed = pending_since
+        .map(|since| since.elapsed())
+        .unwrap_or_default();
     if elapsed >= RING_HOLD {
         hub.set_audio(Some(hit.view.clone()));
         None
@@ -500,7 +504,10 @@ async fn list_sink_inputs() -> std::io::Result<Vec<StreamHit>> {
     };
     let mut hits = Vec::new();
     for item in items {
-        let corked = item.get("corked").and_then(|v| v.as_bool()).unwrap_or(false);
+        let corked = item
+            .get("corked")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
         let mut properties = HashMap::new();
         if let Some(map) = item.get("properties").and_then(|v| v.as_object()) {
             for (key, value) in map {

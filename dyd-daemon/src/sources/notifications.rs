@@ -224,8 +224,8 @@ impl NotificationSource {
 
     fn handle_portal_add(&self, msg: zbus::Message) {
         let body = msg.body();
-        let Ok((id, fields)) = body
-            .deserialize::<(String, std::collections::HashMap<String, zvariant::Value>)>()
+        let Ok((id, fields)) =
+            body.deserialize::<(String, std::collections::HashMap<String, zvariant::Value>)>()
         else {
             return;
         };

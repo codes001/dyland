@@ -283,7 +283,10 @@ fn write_health(window: &gtk::ApplicationWindow, status: &str, monitor: &str) {
 }
 
 pub fn overlay_origin(monitor_x: i32, monitor_width: i32, overlay_width: i32) -> i32 {
-    monitor_x + monitor_width.saturating_sub(overlay_width) / 2
+    // `i32::saturating_sub` still goes negative. Keep a too-wide island on the
+    // monitor instead of centering it off the left edge.
+    let spare = (monitor_width - overlay_width).max(0);
+    monitor_x + spare / 2
 }
 
 pub fn css_rect_to_window(

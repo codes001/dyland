@@ -1,7 +1,7 @@
 pub mod battery;
-pub mod calls;
 pub mod bluetooth;
 pub mod brightness;
+pub mod calls;
 pub mod dbus_props;
 pub mod fullscreen;
 pub mod media;
