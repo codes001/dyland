@@ -14,6 +14,7 @@ pub use lifecycle::DaemonState;
 use sources::battery::BatterySource;
 use sources::bluetooth::BluetoothSource;
 use sources::brightness::BrightnessSource;
+use sources::calls::{self, CallHub};
 use sources::fullscreen::{poll_fullscreen, FullscreenState};
 use sources::media::MediaSource;
 use sources::notifications::NotificationSource;
@@ -51,6 +52,7 @@ pub struct Daemon {
     activity_queue: Arc<tokio::sync::Mutex<queue::ActivityQueue>>,
     media_source: Option<Arc<MediaSource>>,
     notification_source: Option<Arc<NotificationSource>>,
+    call_hub: Arc<CallHub>,
     battery_source: Option<Arc<BatterySource>>,
     wifi_source: Option<Arc<WifiSource>>,
     bluetooth_source: Option<Arc<BluetoothSource>>,
@@ -108,6 +110,7 @@ impl Daemon {
             activity_queue,
             media_source: None,
             notification_source: None,
+            call_hub: CallHub::new(),
             battery_source: None,
             wifi_source: None,
             bluetooth_source: None,
@@ -127,6 +130,7 @@ impl Daemon {
         self.connect_dbus().await;
         let dbus_ready_ms = launch_start.elapsed().as_millis();
         tracing::info!(elapsed_ms = dbus_ready_ms, "D-Bus connections established");
+        self.serve_call_api();
 
         // Step 2: Initialize sources & listeners
         self.init_media_source().await;
@@ -140,6 +144,7 @@ impl Daemon {
         self.start_fullscreen_poller().await;
         self.start_media_poller().await;
         self.start_notification_listener().await;
+        self.start_call_monitor();
         self.start_battery_listener().await;
         self.start_wifi_poller().await;
         self.start_bluetooth_poller().await;
@@ -268,6 +273,7 @@ impl Daemon {
                 .notification_source
                 .as_ref()
                 .map(|n| n.event_broadcast()),
+            call_broadcast: Some(self.call_hub.event_broadcast()),
             battery_broadcast: self.battery_source.as_ref().map(|b| b.event_broadcast()),
             wifi_broadcast: self.wifi_source.as_ref().map(|w| w.event_broadcast()),
             bluetooth_broadcast: self.bluetooth_source.as_ref().map(|b| b.event_broadcast()),
@@ -333,6 +339,7 @@ impl Daemon {
         if let Some(conn) = self.dbus_conn.as_ref() {
             source.set_dbus_connection(conn.clone());
         }
+        source.set_call_hub(self.call_hub.clone());
         self.notification_source = Some(Arc::new(source));
         tracing::info!("notification source initialized");
     }
@@ -432,6 +439,28 @@ impl Daemon {
             });
             tracing::info!("brightness poller started");
         }
+    }
+
+    fn serve_call_api(&self) {
+        let Some(conn) = self.dbus_conn.clone() else {
+            tracing::warn!("incoming-call API skipped; no session bus");
+            return;
+        };
+        let hub = self.call_hub.clone();
+        tokio::spawn(async move {
+            if let Err(err) = calls::serve_island(conn, hub).await {
+                tracing::warn!(error = %err, "incoming-call API failed");
+            }
+        });
+    }
+
+    fn start_call_monitor(&self) {
+        let hub = self.call_hub.clone();
+        let shutdown_rx = self.shutdown_rx.clone();
+        tokio::spawn(async move {
+            calls::watch_audio(hub, shutdown_rx).await;
+        });
+        tracing::info!("call monitor started");
     }
 
     async fn start_notification_listener(&mut self) {

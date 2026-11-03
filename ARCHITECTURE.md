@@ -46,8 +46,15 @@
 
 ### 2. `dyd-ui` (Frontend Overlay)
 - Built with **Tauri**, **React**, **Framer Motion**, and **Zustand**.
-- Transparent, frameless window positioned fixed at top-center of monitor screen.
-- Receives events over WebSocket/IPC and renders 60fps spring animations.
+- Transparent, frameless utility window. On GNOME it is stacked above the top bar by the `dyland@dyland.app` shell extension, because Mutter does not implement layer-shell.
+- Receives events over the daemon socket and renders the island. Input is limited to the island surface.
+
+### 2b. `dyd-shell` (GNOME overlay integration)
+- Hides the top-bar clock while the island is mapped.
+- Reparents the dyland surface into the shell UI group and pins it to the top center of the primary monitor.
+- Restores the clock when the extension is disabled, the screen locks, or the island process exits.
+
+Login and crash recovery are specified in [docs/desktop-integration.md](docs/desktop-integration.md).
 
 ### 3. `dyd-types` (Shared Type Contract)
 - Defines Rust structures (`IpcEvent`, `IpcCommand`, `AppConfig`, `ActivityPayload`) and TypeScript bindings (`types/src/index.ts`).

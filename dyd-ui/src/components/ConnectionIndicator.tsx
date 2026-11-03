@@ -10,8 +10,8 @@ const indicatorColors: Record<ConnectionStatus, string> = {
 
 const statusLabels: Record<ConnectionStatus, string> = {
   connected: "",
-  connecting: "Connecting...",
-  reconnecting: "Reconnecting...",
+  connecting: "",
+  reconnecting: "",
   disconnected: "Disconnected",
 };
 
@@ -23,7 +23,7 @@ export function ConnectionIndicator() {
     return () => unsub();
   }, []);
 
-  if (status === "connected") return null;
+  if (status === "connected" || status === "connecting" || status === "reconnecting") return null;
 
   return (
     <div

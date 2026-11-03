@@ -32,14 +32,17 @@ test:
 deb: build-release
 	@echo "Building Debian package..."
 	@which dpkg-deb >/dev/null 2>&1 || (echo "dpkg-deb is required" && exit 1)
-	@mkdir -p dist/dyd_deb/DEBIAN dist/dyd_deb/usr/bin dist/dyd_deb/usr/share/applications dist/dyd_deb/usr/share/icons/hicolor/128x128/apps dist/dyd_deb/usr/lib/systemd/user dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app
+	@mkdir -p dist/dyd_deb/DEBIAN dist/dyd_deb/usr/bin dist/dyd_deb/usr/share/applications dist/dyd_deb/usr/share/icons/hicolor/128x128/apps dist/dyd_deb/usr/lib/systemd/user dist/dyd_deb/etc/xdg/autostart dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app
 	@printf "Package: dyland\nVersion: $(VERSION)\nArchitecture: amd64\nMaintainer: dyland Maintainers <maintainers@dyland.org>\nDepends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libayatana-appindicator3-1\nSection: utils\nPriority: optional\nDescription: Dynamic Island for Linux Desktops\n Smooth, responsive overlay island bringing notifications, status, and media controls to Linux.\n" > dist/dyd_deb/DEBIAN/control
 	@cp target/release/dyd-daemon dist/dyd_deb/usr/bin/dyd-daemon
 	@if [ -f target/release/dyd-ui-tauri ]; then cp target/release/dyd-ui-tauri dist/dyd_deb/usr/bin/dyd-ui; elif [ -f target/release/dyland ]; then cp target/release/dyland dist/dyd_deb/usr/bin/dyd-ui; fi
-	@cp resources/dyland.desktop dist/dyd_deb/usr/share/applications/dyland.desktop
+	@cp resources/dyland-session dist/dyd_deb/usr/bin/dyland-session
+	@chmod 755 dist/dyd_deb/usr/bin/dyland-session
+	@sed 's|@BINDIR@|/usr/bin|g' resources/dyland.desktop > dist/dyd_deb/usr/share/applications/dyland.desktop
+	@sed 's|@BINDIR@|/usr/bin|g' resources/dyland-autostart.desktop > dist/dyd_deb/etc/xdg/autostart/dyland.desktop
 	@cp dyd-ui/src-tauri/icons/128x128.png dist/dyd_deb/usr/share/icons/hicolor/128x128/apps/dyd.png
-	@cp resources/dyd-daemon.service dist/dyd_deb/usr/lib/systemd/user/dyd-daemon.service
-	@cp resources/dyd-ui.service dist/dyd_deb/usr/lib/systemd/user/dyd-ui.service
+	@sed 's|@BINDIR@|/usr/bin|g' resources/dyd-daemon.service > dist/dyd_deb/usr/lib/systemd/user/dyd-daemon.service
+	@sed 's|@BINDIR@|/usr/bin|g' resources/dyd-ui.service > dist/dyd_deb/usr/lib/systemd/user/dyd-ui.service
 	@cp dyd-shell/metadata.json dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/metadata.json
 	@cp dyd-shell/extension.js dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/extension.js
 	@cp dyd-shell/stylesheet.css dist/dyd_deb/usr/share/gnome-shell/extensions/dyland@dyland.app/stylesheet.css
@@ -54,48 +57,63 @@ clean:
 
 install:
 	@if [ ! -f target/release/dyd-daemon ] || [ ! -f target/release/dyd-ui-tauri ]; then \
-		echo "Release binaries not found in target/release/. Running build-release..."; \
-		PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release || (echo "Failed to run cargo. Please run 'make build-release' as your normal user first, then run 'sudo make install'." && exit 1); \
-		cd dyd-ui && npm run build && PATH="$$PATH:$$HOME/.cargo/bin:/root/.cargo/bin" cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml; \
+		echo "Release binaries not found in target/release/."; \
+		echo "Run 'make build-release' as your normal user, then 'sudo make install'."; \
+		exit 1; \
 	fi
 	install -Dm755 target/release/dyd-daemon $(DESTDIR)$(BINDIR)/dyd-daemon
 	install -Dm755 target/release/dyd-ui-tauri $(DESTDIR)$(BINDIR)/dyd-ui
-	install -Dm644 resources/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
+	install -Dm755 resources/dyland-session $(DESTDIR)$(BINDIR)/dyland-session
+	mkdir -p dist/install
+	sed 's|@BINDIR@|$(BINDIR)|g' resources/dyland.desktop > dist/install/dyland.desktop
+	sed 's|@BINDIR@|$(BINDIR)|g' resources/dyland-autostart.desktop > dist/install/dyland-autostart.desktop
+	sed 's|@BINDIR@|$(BINDIR)|g' resources/dyd-daemon.service > dist/install/dyd-daemon.service
+	sed 's|@BINDIR@|$(BINDIR)|g' resources/dyd-ui.service > dist/install/dyd-ui.service
+	install -Dm644 dist/install/dyland.desktop $(DESTDIR)$(DATADIR)/applications/dyland.desktop
+	install -Dm644 dist/install/dyland-autostart.desktop $(DESTDIR)/etc/xdg/autostart/dyland.desktop
 	install -Dm644 dyd-ui/src-tauri/icons/128x128.png $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	install -Dm644 dyd-shell/metadata.json $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/metadata.json
 	install -Dm644 dyd-shell/extension.js $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/extension.js
 	install -Dm644 dyd-shell/stylesheet.css $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app/stylesheet.css
-	install -Dm644 resources/dyd-daemon.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
-	install -Dm644 resources/dyd-ui.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
+	install -Dm644 dist/install/dyd-daemon.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
+	install -Dm644 dist/install/dyd-ui.service $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
 	@-which update-desktop-database >/dev/null 2>&1 && update-desktop-database $(DESTDIR)$(DATADIR)/applications || true
 	@-which gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t $(DESTDIR)$(DATADIR)/icons/hicolor || true
-	@echo "dyland installed cleanly to $(PREFIX)."
-	@echo "Now enable autostart (as your normal user, NO sudo):"
-	@echo "  make enable"
+	@echo "dyland installed to $(PREFIX)."
+	@echo "Next graphical login starts it from /etc/xdg/autostart (no extra step)."
+	@echo "To start it in this session now: make enable"
 
-# Enable autostart for the current user: daemon + UI start at login,
-# restart on crash, and survive reboots until disabled.
+# Enable autostart for the current user and start the island now.
+# XDG autostart from 'make install' already covers the next login.
 enable:
 	systemctl --user daemon-reload
-	systemctl --user enable --now dyd-daemon.service dyd-ui.service
-	@echo "dyland enabled. It will now appear at every login until you run 'make disable'."
+	systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS XAUTHORITY XDG_CURRENT_DESKTOP || true
+	systemctl --user reenable dyd-daemon.service dyd-ui.service
+	systemctl --user start dyd-daemon.service dyd-ui.service
+	rm -f $(HOME)/.config/autostart/dyland.desktop
+	bash dyd-shell/install.sh
+	@echo "dyland is running. It starts at every login until you run 'make disable'."
 
-# Install the GNOME Shell extension that renders the island inside the shell
-# (above every window, at the top of the screen). Requires a logout/login.
+# Install the GNOME Shell extension that stacks the island above the top bar.
 install-shell:
 	bash dyd-shell/install.sh
 
 disable:
-	systemctl --user disable --now dyd-daemon.service dyd-ui.service
-	@echo "dyland disabled."
+	systemctl --user disable --now dyd-daemon.service dyd-ui.service || true
+	mkdir -p $(HOME)/.config/autostart
+	printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=dyland' 'Hidden=true' > $(HOME)/.config/autostart/dyland.desktop
+	-gnome-extensions disable dyland@dyland.app
+	@echo "dyland will not start at login. The GNOME clock returns when the shell extension disables."
 
 uninstall:
 	systemctl --user disable --now dyd-daemon.service dyd-ui.service 2>/dev/null || true
 	rm -f $(DESTDIR)$(BINDIR)/dyd-daemon
 	rm -f $(DESTDIR)$(BINDIR)/dyd-ui
+	rm -f $(DESTDIR)$(BINDIR)/dyland-session
 	rm -f $(DESTDIR)$(DATADIR)/applications/dyland.desktop
+	rm -f $(DESTDIR)/etc/xdg/autostart/dyland.desktop
 	rm -f $(DESTDIR)$(DATADIR)/icons/hicolor/128x128/apps/dyd.png
 	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-daemon.service
 	rm -f $(DESTDIR)$(DATADIR)/systemd/user/dyd-ui.service
 	rm -rf $(DESTDIR)$(DATADIR)/gnome-shell/extensions/dyland@dyland.app
-	@echo "dyland uninstalled."
+	@echo "dyland uninstalled. Per-user autostart overrides remain in ~/.config/autostart until 'make disable'."

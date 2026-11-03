@@ -13,13 +13,15 @@
     "windows": [
       {
         "title": "dyland",
-        "width": 400,
-        "height": 100,
+        "width": 440,
+        "height": 96,
         "decorations": false,
         "transparent": true,
+        "shadow": false,
         "alwaysOnTop": true,
+        "visibleOnAllWorkspaces": true,
         "focus": false,
-        "skipTaskbar": false,
+        "skipTaskbar": true,
         "resizable": false,
         "center": false
       }

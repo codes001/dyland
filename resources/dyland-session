@@ -1,0 +1,161 @@
+#!/bin/sh
+# Login entry point for dyland.
+#
+# XDG autostart runs this after the graphical session exists, so DISPLAY and
+# WAYLAND_DISPLAY are set. It enables the GNOME integration, imports that
+# environment into the systemd user manager, and starts the user services.
+# A clean UI exit (code 0) stays stopped. Any other exit is a crash and is
+# restarted here when systemd is not supervising the process.
+set -eu
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dyland"
+mkdir -p "$STATE_DIR"
+LOG="$STATE_DIR/session.log"
+UUID="dyland@dyland.app"
+
+timestamp() {
+    date -Iseconds 2>/dev/null || date
+}
+
+log() {
+    printf '%s %s\n' "$(timestamp)" "$*" >>"$LOG"
+}
+
+log "session start"
+
+if [ -z "${WAYLAND_DISPLAY:-}" ] && [ -z "${DISPLAY:-}" ]; then
+    log "no graphical display; refusing to start"
+    exit 1
+fi
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -x "$SCRIPT_DIR/dyd-ui" ]; then
+    UI="$SCRIPT_DIR/dyd-ui"
+    DAEMON="$SCRIPT_DIR/dyd-daemon"
+else
+    UI=$(command -v dyd-ui || true)
+    DAEMON=$(command -v dyd-daemon || true)
+fi
+
+if [ -z "${UI:-}" ] || [ ! -x "$UI" ]; then
+    log "dyd-ui not found"
+    exit 1
+fi
+
+install_extension() {
+    if ! command -v gnome-extensions >/dev/null 2>&1; then
+        return 0
+    fi
+    system_ext=""
+    for candidate in \
+        /usr/local/share/gnome-shell/extensions/$UUID \
+        /usr/share/gnome-shell/extensions/$UUID
+    do
+        if [ -f "$candidate/extension.js" ]; then
+            system_ext=$candidate
+            break
+        fi
+    done
+    if [ -n "$system_ext" ]; then
+        dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$UUID"
+        mkdir -p "$dest"
+        # The packaged copy is updated only by a root install. A newer file
+        # already in the user directory is the one to keep.
+        if [ ! -f "$dest/extension.js" ] || [ "$system_ext/extension.js" -nt "$dest/extension.js" ]; then
+            cp "$system_ext/metadata.json" "$system_ext/extension.js" "$system_ext/stylesheet.css" "$dest/"
+        else
+            log "keeping the newer user shell extension"
+        fi
+    fi
+    if command -v gsettings >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+        python3 - "$UUID" << 'PY' >>"$LOG" 2>&1 || log "could not record the shell extension for the next login"
+import ast, subprocess, sys
+uuid = sys.argv[1]
+
+def get(key):
+    raw = subprocess.check_output(
+        ["gsettings", "get", "org.gnome.shell", key], text=True
+    ).strip()
+    if raw in ("@as []", "@as[]"):
+        return []
+    value = ast.literal_eval(raw)
+    return list(value) if isinstance(value, list) else []
+
+def put(key, values):
+    body = ", ".join("'" + item.replace("'", "") + "'" for item in values)
+    subprocess.check_call(["gsettings", "set", "org.gnome.shell", key, f"[{body}]"])
+
+enabled = get("enabled-extensions")
+if uuid not in enabled:
+    enabled.append(uuid)
+    put("enabled-extensions", enabled)
+disabled = [item for item in get("disabled-extensions") if item != uuid]
+if len(disabled) != len(get("disabled-extensions")):
+    put("disabled-extensions", disabled)
+PY
+    fi
+    if gnome-extensions enable "$UUID" >>"$LOG" 2>&1; then
+        log "gnome shell extension enabled"
+    else
+        log "gnome shell extension is marked for the next login; the running shell has not loaded it yet"
+    fi
+}
+
+import_session() {
+    if ! command -v systemctl >/dev/null 2>&1; then
+        return 0
+    fi
+    vars=""
+    for name in DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS XAUTHORITY XDG_CURRENT_DESKTOP; do
+        eval "value=\${$name-}"
+        if [ -n "$value" ]; then
+            vars="$vars $name"
+        fi
+    done
+    if [ -n "$vars" ]; then
+        # shellcheck disable=SC2086
+        systemctl --user import-environment $vars >>"$LOG" 2>&1 || log "could not import session environment"
+    fi
+}
+
+start_daemon_direct() {
+    if [ -z "${DAEMON:-}" ] || [ ! -x "$DAEMON" ]; then
+        log "dyd-daemon not found"
+        return 0
+    fi
+    if command -v pgrep >/dev/null 2>&1 && pgrep -x dyd-daemon >/dev/null 2>&1; then
+        return 0
+    fi
+    "$DAEMON" >>"$LOG" 2>&1 &
+    log "started daemon directly pid $!"
+}
+
+install_extension
+import_session
+
+if command -v systemctl >/dev/null 2>&1; then
+    if systemctl --user reenable dyd-daemon.service dyd-ui.service >>"$LOG" 2>&1 \
+        && systemctl --user start dyd-daemon.service dyd-ui.service >>"$LOG" 2>&1 \
+        && systemctl --user is-active --quiet dyd-ui.service
+    then
+        log "systemd units active"
+        exit 0
+    fi
+    log "systemd did not keep dyd-ui active; supervising directly"
+    systemctl --user stop dyd-ui.service >>"$LOG" 2>&1 || true
+fi
+
+start_daemon_direct
+
+while true; do
+    set +e
+    "$UI" >>"$LOG" 2>&1
+    code=$?
+    set -e
+    if [ "$code" -eq 0 ]; then
+        log "dyd-ui exited cleanly"
+        exit 0
+    fi
+    log "dyd-ui exited $code; restarting in 2s"
+    sleep 2
+done

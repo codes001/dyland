@@ -16,6 +16,7 @@ use dyd_types::IpcEnvelope;
 pub struct SourceContext {
     pub media_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
     pub notification_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
+    pub call_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
     pub battery_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
     pub wifi_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
     pub bluetooth_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
@@ -49,6 +50,9 @@ impl SourceContext {
             receivers.push(tx.subscribe());
         }
         if let Some(tx) = &self.notification_broadcast {
+            receivers.push(tx.subscribe());
+        }
+        if let Some(tx) = &self.call_broadcast {
             receivers.push(tx.subscribe());
         }
         if let Some(tx) = &self.battery_broadcast {

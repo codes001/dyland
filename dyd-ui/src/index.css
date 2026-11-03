@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes dyd-call-pulse {
+  0%,
+  100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.dyd-call-pulse {
+  animation: dyd-call-pulse 1s ease-in-out infinite;
+}
+
 :root {
   --font-scale: 1;
   --pill-bg: #000000;
@@ -65,6 +75,16 @@ html[data-tauri="true"],
 html[data-tauri="true"] body,
 html[data-tauri="true"] #root {
   background: transparent !important;
+}
+
+/* The compositor input region is the real click-through mask. This keeps
+ * empty overlay pixels from being treated as island clicks inside the page. */
+html[data-tauri="true"] #root {
+  pointer-events: none;
+}
+
+html[data-tauri="true"] [data-island-hit] {
+  pointer-events: auto;
 }
 
 .pill {

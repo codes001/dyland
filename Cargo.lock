@@ -1284,6 +1284,10 @@ name = "dyd-ui-tauri"
 version = "0.1.0"
 dependencies = [
  "dyd-types",
+ "gdk",
+ "glib",
+ "gtk",
+ "libc",
  "serde",
  "serde_json",
  "tauri",

@@ -1,14 +1,17 @@
 [Unit]
 Description=dyland Dynamic Island UI
 After=graphical-session.target dyd-daemon.service
-Wants=graphical-session.target dyd-daemon.service
+PartOf=graphical-session.target
+Wants=dyd-daemon.service
+StartLimitIntervalSec=120
+StartLimitBurst=10
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/dyd-ui
-# on-failure: crashes/signals restart it, but a clean tray "Quit" stays quit
+ExecStart=@BINDIR@/dyd-ui
 Restart=on-failure
-RestartSec=3s
+RestartSec=2s
+Environment=DYD_LOG=info
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target

@@ -21,13 +21,13 @@ import { useConfigStore } from "./stores/config-store";
 import { useMediaStore } from "./stores/media-store";
 import { useActivityStore } from "./stores/activity-store";
 import { ipcClient } from "./ipc/client";
-import { getCurrentWindow, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
+import { useOverlayLayout } from "./hooks/useOverlayLayout";
 
 function App() {
   const state = usePillStore((s) => s.state);
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
-  const notification = useNotificationStore((s) => s.notification);
+  const notification = useNotificationStore((s) => s.call ?? s.notification);
   const isMediaPlaying = useMediaStore((s) => s.media?.playbackStatus === "playing");
   const activity = useActivityStore((s) => s.currentActivity);
   const selectedStatusFeature = useSystemStore((s) => s.selectedStatusFeature);
@@ -38,35 +38,9 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useOverlayLayout(state !== "hidden" && !isFullscreen, state === "expanded" || menuOpen);
+
   useEffect(() => {
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      document.body.dataset.tauri = "true";
-      // Size the island to span the top edge of the screen and pin it to
-      // the origin. primary_monitor() returns None on Wayland, so we use
-      // window.screen instead, which reports the full screen size on both
-      // Wayland and X11. The pill centers itself at 50% of the window, so
-      // a full-width window puts it at true top-center of the display.
-      const applyGeometry = () => {
-        const dpr = window.devicePixelRatio || 1;
-        const win = getCurrentWindow();
-        void win.setSize(
-          new PhysicalSize(Math.round(window.screen.width * dpr), Math.round(100 * dpr)),
-        );
-        // The position request can be dropped if the window is not yet
-        // mapped, which leaves the island sitting lower than the top edge.
-        // Retry after the window has had time to appear on screen.
-        void win.setPosition(new PhysicalPosition(0, 0));
-        // Compositors (e.g. GNOME) may still place the window below the
-        // top edge, so read the actual position and pull the window's top
-        // edge up to the screen top. If the compositor clamps negative
-        // coordinates to 0, the window ends up at the top edge anyway.
-        void win.outerPosition().then((p) => {
-          if (p.y > 0) void win.setPosition(new PhysicalPosition(0, -p.y));
-        });
-      };
-      applyGeometry();
-      [300, 1000, 2500].forEach((ms) => setTimeout(applyGeometry, ms));
-    }
     connectionStore.init();
     return () => connectionStore.cleanup();
   }, []);

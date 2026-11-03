@@ -29,9 +29,10 @@ export default function ContextMenu({ isOpen, items, onClose }: ContextMenuProps
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -4 }}
             transition={{ duration: 0.15 }}
+            data-island-hit=""
             style={{
               position: "absolute",
-              top: "100%",
+              top: 58,
               left: "50%",
               x: "-50%",
               marginTop: 4,

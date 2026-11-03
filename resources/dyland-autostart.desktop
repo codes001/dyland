@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=dyland
+GenericName=Dynamic Island
+Comment=Start the dyland Dynamic Island after graphical login
+Exec=@BINDIR@/dyland-session
+Icon=dyd
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=1
+X-GNOME-Autostart-Phase=Applications

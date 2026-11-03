@@ -1,3 +1,8 @@
+mod instance;
+mod logging;
+mod overlay;
+mod paths;
+
 use std::sync::Mutex;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -7,7 +12,7 @@ use tokio::sync::watch;
 use dyd_types::{IpcCommand, IpcEnvelope};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
 struct DaemonClient {
     writer: Option<tokio::sync::mpsc::Sender<IpcEnvelope>>,
@@ -141,11 +146,49 @@ async fn send_command(
     tx.send(envelope).await.map_err(|e| e.to_string())
 }
 
-pub fn run() {
-    tauri::Builder::default()
+#[tauri::command]
+fn set_overlay_mode(window: tauri::WebviewWindow, visible: bool, tall: bool) -> Result<(), String> {
+    overlay::set_mode(&window, visible, tall)
+}
+
+#[tauri::command]
+fn set_input_regions(
+    window: tauri::WebviewWindow,
+    regions: Vec<overlay::InputRect>,
+) -> Result<(), String> {
+    overlay::set_input_regions(&window, &regions)
+}
+
+pub fn run() -> i32 {
+    logging::init();
+    if !paths::graphical_session() {
+        logging::error(
+            "no DISPLAY or WAYLAND_DISPLAY; refusing to start before the graphical session is ready",
+        );
+        return 1;
+    }
+
+    let primary = match instance::acquire() {
+        Ok(instance::Acquisition::Primary(guard)) => guard,
+        Ok(instance::Acquisition::Secondary) => {
+            logging::info("dyland is already running; asked the existing instance to come forward");
+            return 0;
+        }
+        Err(err) => {
+            logging::error(&format!("single-instance lock failed: {err}"));
+            return 1;
+        }
+    };
+    let socket_path = primary.socket_path().to_path_buf();
+
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(Mutex::new(DaemonClient::new()))
-        .setup(|app| {
+        .setup(move |app| {
+            instance::serve(socket_path, app.handle().clone());
+            overlay::install_shutdown(app.handle());
+            overlay::attach(app)?;
+
             let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&restart, &quit])?;
@@ -167,19 +210,7 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // Diagnostics: report the window geometry a few times after
-            // launch so we can verify the island hangs from the top edge
-            // (the webview applies its own sizing shortly after start).
-            let window = app.get_webview_window("main").expect("main window");
-            tauri::async_runtime::spawn(async move {
-                for _ in 0..3 {
-                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-                    let pos = window.outer_position();
-                    let size = window.outer_size();
-                    eprintln!("DYLD-GEO pos={pos:?} size={size:?}");
-                }
-            });
-
+            logging::info("dyland ui ready");
             Ok(())
         })
         .on_window_event(|_window, event| {
@@ -187,7 +218,20 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .invoke_handler(tauri::generate_handler![connect_daemon, send_command])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .invoke_handler(tauri::generate_handler![
+            connect_daemon,
+            send_command,
+            set_overlay_mode,
+            set_input_regions
+        ])
+        .run(tauri::generate_context!());
+
+    drop(primary);
+    match result {
+        Ok(()) => 0,
+        Err(err) => {
+            logging::error(&format!("dyland ui stopped: {err}"));
+            1
+        }
+    }
 }

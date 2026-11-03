@@ -14,6 +14,7 @@ import type {
   BluetoothPayload,
   BrightnessPayload,
   IpcEnvelope,
+  CallPayload,
   NotificationPayload,
   PluginHealthPayload,
   PluginListPayload,
@@ -99,7 +100,9 @@ class IpcClient {
 
       const result = await invoke<string>("connect_daemon");
       if (gen !== this.generation) return;
-      if (result === "connecting") {
+      // connect_daemon returns before the socket task emits "connected".
+      // Writing "connecting" again after that event leaves the label stuck.
+      if (result === "connecting" && this.status !== "connected") {
         this.setStatus("connecting");
       }
     } catch {
@@ -173,8 +176,30 @@ class IpcClient {
         }
         break;
       }
+      case "CallChanged": {
+        const p = envelope.payload as CallPayload;
+        if (p?.active) {
+          this.showCall({
+            id: 0,
+            app_name: p.app_name || "Call",
+            app_icon: null,
+            summary: p.summary || "Incoming call",
+            body: p.body,
+            urgency: "call",
+            actions: [],
+            timestamp: Date.now() / 1000,
+          });
+        } else {
+          useNotificationStore.getState().clearCall();
+        }
+        break;
+      }
       case "NotificationReceived": {
         const p = envelope.payload as NotificationPayload;
+        if (p?.urgency === "call") {
+          this.showCall(p);
+          break;
+        }
         if (p?.app_name) {
           useNotificationStore.getState().setNotification(p);
           if (this.notificationTimer) clearTimeout(this.notificationTimer);
@@ -342,6 +367,14 @@ class IpcClient {
       type: "SetPluginConfig",
       payload: { name, config },
     });
+  }
+
+  private showCall(payload: NotificationPayload) {
+    useNotificationStore.getState().setCall(payload);
+    const { state, isFullscreen } = usePillStore.getState();
+    if (!isFullscreen && (state === "dormant" || state === "hidden")) {
+      usePillStore.getState().transitionTo("active");
+    }
   }
 
   private scheduleReconnect() {

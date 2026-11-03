@@ -55,10 +55,11 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -5 }}
       transition={SPRING.expand}
+      data-island-hit=""
       onClick={(e) => e.stopPropagation()}
       style={{
         position: "absolute",
-        top: "100%",
+        top: 58,
         left: "50%",
         x: "-50%",
         marginTop: 8,

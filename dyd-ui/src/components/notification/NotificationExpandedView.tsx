@@ -36,7 +36,7 @@ function DismissButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function NotificationExpandedView() {
-  const notification = useNotificationStore((s) => s.notification);
+  const notification = useNotificationStore((s) => s.call ?? s.notification);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sentActions, setSentActions] = useState<Set<string>>(new Set());
   const sentActionsRef = useRef<Set<string>>(new Set());
@@ -59,6 +59,10 @@ export default function NotificationExpandedView() {
   const appLabel = notification.app_name?.trim() || displayText(notification) || "App";
 
   const close = () => {
+    if (notification.urgency === "call") {
+      useNotificationStore.getState().clearCall();
+      return;
+    }
     const cmd = JSON.stringify({ type: "NotificationClose", payload: { id: notification.id } });
     ipcClient.sendCommand(cmd);
     useNotificationStore.getState().clearNotification();

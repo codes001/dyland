@@ -2,16 +2,17 @@
 
 **dyland** is a Dynamic Island for Linux desktops built with Rust, Tauri, React, and WebAssembly.
 
-After installing, dyland is a permanent part of your desktop: it auto-starts at
-every login, survives reboots, comes back automatically if it ever crashes, and
-only goes away when you uninstall it.
+After installing, dyland is a permanent part of your desktop: the next graphical
+login starts it, it comes back if it crashes, and it stays until you disable
+or uninstall it. On GNOME the shell extension hides the clock and stacks the
+island above the top bar. See [docs/desktop-integration.md](docs/desktop-integration.md).
 
 ---
 
 ## System Requirements
 - **OS**: Ubuntu 24.04 LTS, Debian 12+, Arch Linux, or Fedora 40+
 - **Desktop Environment**: GNOME 46+ (Wayland or X11)
-- **Dependencies**: `libwebkit2gtk-4.1`, `libgtk-3-0`, `libayatana-appindicator3-1`, `upower`, `NetworkManager`, `bluez`
+- **Dependencies**: WebKitGTK 4.1, GTK 3, libayatana-appindicator, `upower`, NetworkManager, `bluez`
 
 ---
 
@@ -22,9 +23,26 @@ only goes away when you uninstall it.
 #### Prerequisites
 - Rust 1.78+ toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 - Node.js 20+: `nvm install 20`
-- System libraries:
+- System libraries. On Fedora:
+
   ```bash
-  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev build-essential
+  sudo dnf install -y \
+    gcc gcc-c++ make pkgconf-pkg-config \
+    webkit2gtk4.1-devel \
+    gtk3-devel \
+    libsoup3-devel \
+    libayatana-appindicator-gtk3-devel
+  ```
+
+  On Debian or Ubuntu:
+
+  ```bash
+  sudo apt-get install -y \
+    build-essential pkg-config \
+    libwebkit2gtk-4.1-dev \
+    libgtk-3-dev \
+    libsoup-3.0-dev \
+    libayatana-appindicator3-dev
   ```
 
 #### Build & Install
@@ -32,17 +50,21 @@ only goes away when you uninstall it.
 git clone https://github.com/codes001/dyland.git
 cd dyland
 make build-release
-sudo make install        # copies binaries + autostart services
-make enable              # NO sudo — registers autostart for YOUR login
+sudo make install        # binaries, XDG autostart, systemd units, shell extension
+make enable              # optional, NO sudo — start it in this session now
 ```
 
-That's it. The island appears at the top of your screen within a few seconds.
+The next login starts the island on its own. `make enable` is only how you
+start it without logging out. The first time the extension loads, log out and
+back in once if the clock is still visible.
 
-#### What `make enable` does
-- Starts the daemon (`dyd-daemon.service`) and the island window (`dyd-ui.service`) now
-- Registers both as user systemd services started at every login
-- Both auto-restart if they crash (`Restart=on-failure` for both)
-- The island window cannot be closed by accident (closing it is ignored)
+#### What startup does
+- `/etc/xdg/autostart/dyland.desktop` runs `dyland-session` after graphical login
+- That enables the GNOME Shell extension and the user services
+- `dyd-daemon` and `dyd-ui` restart on crash (`Restart=on-failure`)
+- A second launch talks to the running island instead of opening another one
+- Tray **Quit** or `make disable` stays off. Closing the window does not
+- Logs: `~/.local/state/dyland/session.log`, `ui.log`, and `journalctl --user -u dyd-ui`
 
 #### Stopping it without uninstalling
 The app shows a tray icon (Restart / Quit). Choose **Quit** to stop the island
@@ -60,10 +82,15 @@ sudo dpkg -i dyland_0.1.0_amd64.deb
 sudo apt-get install -f # Install missing system dependencies if required
 ```
 
-Enable autostart for your login (run as your normal user):
+The package registers `/etc/xdg/autostart/dyland.desktop`. The next login
+starts the island and enables the user services. To start it immediately:
+
 ```bash
 systemctl --user daemon-reload
-systemctl --user enable --now dyd-daemon.service dyd-ui.service
+systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR DBUS_SESSION_BUS_ADDRESS
+systemctl --user reenable dyd-daemon.service dyd-ui.service
+systemctl --user start dyd-daemon.service dyd-ui.service
+gnome-extensions enable dyland@dyland.app
 ```
 
 ---
@@ -115,7 +142,9 @@ the actual island is the Tauri window above.
 
 | Symptom | Fix |
 |---|---|
-| Island not visible after login | `systemctl --user status dyd-ui.service` — check it started after the graphical session |
-| Island visible but blank/connecting | `systemctl --user status dyd-daemon.service`, check log with `journalctl --user -u dyd-daemon -f` |
-| Services stopped at login | You ran `make enable` from a non-graphical session (e.g. ssh). Run it from your desktop terminal |
+| Island not visible after login | `systemctl --user status dyd-ui.service` and `~/.local/state/dyland/session.log` |
+| Clock still visible over the island | `gnome-extensions info dyland@dyland.app` — log out once so the extension loads |
+| Island visible but blank/connecting | `systemctl --user status dyd-daemon.service`, `journalctl --user -u dyd-daemon -f` |
+| Second icon after launching again | The running instance should come forward. Check `~/.local/state/dyland/ui.log` |
+| Services stopped at login | Run `make enable` from a desktop terminal, not ssh |
 | Uninstall didn't remove the island | `make disable` first, then `sudo make uninstall` |

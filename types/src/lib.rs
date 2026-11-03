@@ -12,6 +12,7 @@ pub enum IpcEvent {
     Pong(IpcPongPayload),
     MediaChanged(MediaChangedPayload),
     NotificationReceived(NotificationPayload),
+    CallChanged(CallPayload),
     BatteryChanged(BatteryPayload),
     WifiChanged(WifiPayload),
     BluetoothChanged(BluetoothPayload),
@@ -184,6 +185,14 @@ pub struct MediaChangedPayload {
     pub length: u64,
     pub position: u64,
     pub playback_status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CallPayload {
+    pub active: bool,
+    pub app_name: String,
+    pub summary: String,
+    pub body: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

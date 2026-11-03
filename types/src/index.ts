@@ -2,6 +2,7 @@ export type IpcEvent =
   | { type: "Pong"; payload: IpcPongPayload }
   | { type: "MediaChanged"; payload: MediaChangedPayload }
   | { type: "NotificationReceived"; payload: NotificationPayload }
+  | { type: "CallChanged"; payload: CallPayload }
   | { type: "BatteryChanged"; payload: BatteryPayload }
   | { type: "WifiChanged"; payload: WifiPayload }
   | { type: "BluetoothChanged"; payload: BluetoothPayload }
@@ -71,6 +72,13 @@ export interface MediaChangedPayload {
   length: number;
   position: number;
   playback_status: string;
+}
+
+export interface CallPayload {
+  active: boolean;
+  app_name: string;
+  summary: string;
+  body: string | null;
 }
 
 export interface NotificationActionItem {

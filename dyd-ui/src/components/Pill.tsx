@@ -89,6 +89,7 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
       aria-live="polite"
       aria-label="Dynamic Island"
       aria-expanded={state === "expanded" ? true : undefined}
+      data-island-hit=""
       onPointerDown={isInteractive ? onPointerDown : undefined}
       onMouseEnter={resetIdleTimer}
       whileHover={isInteractive && reduceMotion !== true ? { scale: 1.02 } : undefined}

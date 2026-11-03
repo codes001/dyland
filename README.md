@@ -63,11 +63,20 @@ Before running or building **dyland**, ensure your system meets the following re
 
 - **Operating System**: Linux (Ubuntu 24.04+, Debian 12+, Arch Linux, Fedora 40+)
 - **Desktop Environment**: GNOME 46+ (Wayland or X11 recommended)
-- **System Dependencies**:
-  - `libwebkit2gtk-4.1-dev` (or `libwebkit2gtk-4.0`)
-  - `libgtk-3-dev`
-  - `libayatana-appindicator3-dev`
-  - `upower`, `NetworkManager`, `bluez`
+- **System Dependencies** (Fedora):
+
+  ```bash
+  sudo dnf install -y \
+    gcc gcc-c++ make pkgconf-pkg-config \
+    webkit2gtk4.1-devel \
+    gtk3-devel \
+    libsoup3-devel \
+    libayatana-appindicator-gtk3-devel \
+    upower NetworkManager bluez
+  ```
+
+  Debian and Ubuntu use the same libraries under different names: `build-essential`, `pkg-config`, `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `libsoup-3.0-dev`, `libayatana-appindicator3-dev`, `upower`, `network-manager`, and `bluez`.
+
 - **Toolchains** (for running from source):
   - **Rust**: `1.78+` (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
   - **Node.js**: `20+` (`npm` / `nvm`)
@@ -111,11 +120,12 @@ survives reboots, auto-restarts if it crashes, and stays until you uninstall it.
 
 ```bash
 make build-release      # build daemon + island binaries
-sudo make install       # copy binaries + autostart services
-make enable             # NO sudo — register autostart for your login
+sudo make install       # binaries, XDG autostart, systemd units, GNOME extension
+make enable             # NO sudo — start it in this session (next login does this itself)
 ```
 
-Done. The island appears at the top of your screen. Remove it any time:
+Done. After the next login the island is at the top of the screen, above the
+GNOME clock. Remove it any time:
 
 ```bash
 make disable            # stop it and remove autostart
@@ -128,7 +138,7 @@ See [INSTALL.md](INSTALL.md) for details, .deb/AppImage options and troubleshoot
 
 ### Option 3: Pre-packaged Distribution (`.deb` or AppImage)
 
-#### Installing via `.deb` package:
+#### Installing via `.deb` package (Debian and Ubuntu only):
 ```bash
 sudo dpkg -i dist/dyland_0.1.0_amd64.deb
 sudo apt-get install -f # Resolve any missing dependencies
