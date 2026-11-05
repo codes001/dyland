@@ -244,10 +244,10 @@ fn default_rects(tall: bool) -> Vec<PxRect> {
         }]
     } else {
         vec![PxRect {
-            x: 147,
-            y: 6,
-            width: 146,
-            height: 52,
+            x: 159,
+            y: 0,
+            width: 122,
+            height: 38,
         }]
     }
 }

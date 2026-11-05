@@ -200,9 +200,8 @@ If you find **dyland** helpful and enjoy having a Dynamic Island experience on y
 
 ### Ways to Support:
 
-- **Buy Me a Coffee**: [buymeacoffee.com](https://www.buymeacoffee.com)
+- **Buy Me a Coffee**: [buymeamalt.com](https://buymeamalt.com/@codes001)
 - **GitHub Sponsors**: [github.com/sponsors/codes001](https://github.com/sponsors/codes001)
-- **Ko-fi**: Support via [ko-fi.com](https://ko-fi.com)
 - **Star the Repo**: Give us a star on GitHub to spread the word.
 
 Thank you for supporting open-source software!

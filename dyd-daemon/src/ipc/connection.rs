@@ -6,6 +6,7 @@ use tokio::sync::{broadcast, mpsc, watch};
 
 use super::context::SourceContext;
 use crate::health::HealthCheck;
+use crate::sources::calls;
 use dyd_types::{IpcCommand, IpcEnvelope, IpcEvent};
 
 struct ClientGuard {
@@ -304,6 +305,36 @@ async fn handle_command(
             IpcEnvelope::event(IpcEvent::ConnectionStatus(
                 dyd_types::ConnectionStatusPayload {
                     status: "ok:notification_action".to_string(),
+                },
+            ))
+        }
+        IpcCommand::CallControl { action, muted } => {
+            let action = action.trim().to_ascii_lowercase();
+            let known = matches!(action.as_str(), "accept" | "reject" | "decline" | "mute");
+            if known {
+                if let Some(hub) = ctx.call_hub.clone() {
+                    let muted = muted.unwrap_or(true);
+                    tokio::spawn(async move {
+                        if action == "mute" {
+                            calls::set_ringtone_muted(muted).await;
+                        }
+                        if let Err(err) = hub.emit_control(&action).await {
+                            tracing::warn!(error = %err, action = %action, "call control failed");
+                        }
+                    });
+                } else {
+                    tracing::debug!(action = %action, "no call hub for call control");
+                }
+            } else {
+                tracing::debug!(action = %action, "ignored unknown call control");
+            }
+            IpcEnvelope::event(IpcEvent::ConnectionStatus(
+                dyd_types::ConnectionStatusPayload {
+                    status: if known {
+                        "ok:call_control".to_string()
+                    } else {
+                        "error:call_control".to_string()
+                    },
                 },
             ))
         }

@@ -179,16 +179,27 @@ class IpcClient {
       case "CallChanged": {
         const p = envelope.payload as CallPayload;
         if (p?.active) {
-          this.showCall({
-            id: 0,
-            app_name: p.app_name || "Call",
-            app_icon: null,
-            summary: p.summary || "Incoming call",
-            body: p.body,
-            urgency: "call",
-            actions: [],
-            timestamp: Date.now() / 1000,
-          });
+          const current = useNotificationStore.getState().call;
+          const appName = p.app_name || "Call";
+          const sameCall = current?.app_name === appName;
+          const answered = p.phase === "active" || (sameCall && current?.phase === "active");
+          const startedAt = answered
+            ? p.started_at || current?.started_at || Date.now() / 1000
+            : 0;
+          this.showCall(
+            {
+              id: 0,
+              app_name: appName,
+              app_icon: null,
+              summary: p.summary || current?.summary || "Incoming call",
+              body: p.body ?? current?.body ?? null,
+              urgency: "call",
+              actions: [],
+              timestamp: current?.timestamp || Date.now() / 1000,
+            },
+            answered ? "active" : "ringing",
+            startedAt,
+          );
         } else {
           useNotificationStore.getState().clearCall();
         }
@@ -369,8 +380,12 @@ class IpcClient {
     });
   }
 
-  private showCall(payload: NotificationPayload) {
-    useNotificationStore.getState().setCall(payload);
+  private showCall(payload: NotificationPayload, phase = "ringing", startedAt = 0) {
+    useNotificationStore.getState().setCall({
+      ...payload,
+      phase,
+      started_at: phase === "active" ? startedAt : 0,
+    });
     const { state, isFullscreen } = usePillStore.getState();
     if (!isFullscreen && (state === "dormant" || state === "hidden")) {
       usePillStore.getState().transitionTo("active");

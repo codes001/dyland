@@ -1,5 +1,6 @@
 import { useNotificationStore } from "../../stores/notification-store";
 import AppIcon from "./AppIcon";
+import CallControls, { useCallElapsed } from "./CallControls";
 import {
   displayText,
   normalizeUrgency,
@@ -7,14 +8,17 @@ import {
 } from "../../lib/notification-utils";
 
 export default function PillNotificationContent() {
+  const call = useNotificationStore((s) => s.call);
   const notification = useNotificationStore((s) => s.call ?? s.notification);
+  const isCall = notification?.urgency === "call";
+  const answered = call?.phase === "active";
+  const elapsed = useCallElapsed(answered ? call?.started_at : undefined);
   if (!notification) return null;
-
-  const isCall = notification.urgency === "call";
   const urgency = normalizeUrgency(notification.urgency);
   const isCritical = urgency === "critical";
-  const text = truncateSummary(isCall ? notification.summary || "Incoming call" : displayText(notification));
+  const text = truncateSummary(isCall ? callLabel(notification.summary, answered) : displayText(notification));
   const appLabel = notification.app_name?.trim() || text || "app";
+  const timer = elapsed || "0:00";
 
   return (
     <div
@@ -25,11 +29,17 @@ export default function PillNotificationContent() {
         justifyContent: "flex-start",
         gap: 8,
         width: "100%",
-        maxWidth: 200,
+        maxWidth: isCall ? "none" : 200,
         position: "relative",
       }}
       role="status"
-      aria-label={isCall ? `Incoming call from ${appLabel}` : `Notification from ${appLabel}`}
+      aria-label={
+        answered
+          ? `On call with ${text || appLabel}, ${timer}`
+          : isCall
+            ? `Incoming call from ${appLabel}`
+            : `Notification from ${appLabel}`
+      }
     >
       <div
         style={{
@@ -58,19 +68,20 @@ export default function PillNotificationContent() {
       >
         {text || "Notification"}
       </span>
-      {isCall && (
+      {answered && (
         <span
-          className="dyd-call-pulse"
-          aria-hidden="true"
           style={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            backgroundColor: "#30D158",
+            color: "#30D158",
+            fontSize: 14,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
             flexShrink: 0,
           }}
-        />
+        >
+          {timer}
+        </span>
       )}
+      {isCall && <CallControls compact answered={answered} />}
       {isCritical && (
         <span
           role="img"
@@ -86,6 +97,15 @@ export default function PillNotificationContent() {
       )}
     </div>
   );
+}
+
+function callLabel(summary: string | null | undefined, answered: boolean): string {
+  const text = summary?.trim() || "";
+  if (!answered) return text || "Incoming call";
+  const fromCaller = text.replace(/^incoming\s+(?:voice\s+|video\s+)?call\s+from\s+/i, "");
+  if (fromCaller !== text && fromCaller.trim()) return fromCaller.trim();
+  const stripped = text.replace(/^incoming\s+/i, "").trim();
+  return stripped || "On call";
 }
 
 function CallGlyph() {

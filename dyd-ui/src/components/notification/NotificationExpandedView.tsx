@@ -3,6 +3,7 @@ import { useNotificationStore } from "../../stores/notification-store";
 import { ipcClient } from "../../ipc/client";
 import AppIcon from "./AppIcon";
 import { displayText, normalizeUrgency, relativeTime } from "../../lib/notification-utils";
+import CallControls, { useCallElapsed } from "./CallControls";
 
 const MAX_VISIBLE_ACTIONS = 3;
 const MAX_BODY_LINES = 4;
@@ -36,12 +37,16 @@ function DismissButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function NotificationExpandedView() {
+  const call = useNotificationStore((s) => s.call);
   const notification = useNotificationStore((s) => s.call ?? s.notification);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sentActions, setSentActions] = useState<Set<string>>(new Set());
   const sentActionsRef = useRef<Set<string>>(new Set());
 
   const notificationId = notification?.id;
+  const isCall = notification?.urgency === "call";
+  const answered = call?.phase === "active";
+  const elapsed = useCallElapsed(answered ? call?.started_at : undefined);
   useEffect(() => {
     setOverflowOpen(false);
     setSentActions(new Set());
@@ -104,7 +109,19 @@ export default function NotificationExpandedView() {
         </div>
       </div>
 
-      {hasBody ? (
+      {answered ? (
+        <span
+          style={{
+            fontSize: 28,
+            fontWeight: 600,
+            lineHeight: 1.1,
+            color: "#30D158",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {elapsed || "0:00"}
+        </span>
+      ) : hasBody ? (
         <div
           style={{
             maxHeight: `calc(${MAX_BODY_LINES} * 1.4em)`,
@@ -126,11 +143,13 @@ export default function NotificationExpandedView() {
         </div>
       ) : (
         <span style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3, color: "#fff" }}>
-          {displayText(notification) || "Notification"}
+          {answered ? elapsed || "0:00" : displayText(notification) || "Notification"}
         </span>
       )}
 
-      {actions.length > 0 && (
+      {isCall && <CallControls answered={answered} />}
+
+      {!isCall && actions.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {visible.map((action) => (
             <button

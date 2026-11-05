@@ -281,6 +281,7 @@ impl Daemon {
             brightness_broadcast: self.brightness_source.as_ref().map(|b| b.event_broadcast()),
             media_source: self.media_source.clone(),
             notification_source: self.notification_source.clone(),
+            call_hub: Some(self.call_hub.clone()),
             battery_source: self.battery_source.clone(),
             wifi_source: self.wifi_source.clone(),
             bluetooth_source: self.bluetooth_source.clone(),

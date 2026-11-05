@@ -59,13 +59,13 @@ export default function ExpandedView({ children, onClose }: ExpandedViewProps) {
       onClick={(e) => e.stopPropagation()}
       style={{
         position: "absolute",
-        top: 58,
+        top: 48,
         left: "50%",
         x: "-50%",
         marginTop: 8,
-        width: 380,
-        minHeight: 200,
-        borderRadius: 18,
+        width: 368,
+        minHeight: 192,
+        borderRadius: 17,
         overflow: "hidden",
         ...(hasBlur
           ? {

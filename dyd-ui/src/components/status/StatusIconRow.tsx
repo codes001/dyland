@@ -12,6 +12,7 @@ import WifiIndicator from "./WifiIndicator";
 import BluetoothIndicator from "./BluetoothIndicator";
 import VolumeIndicator from "./VolumeIndicator";
 import BrightnessIndicator from "./BrightnessIndicator";
+import IdleClock from "../IdleClock";
 
 export default function StatusIconRow() {
   const battery = useSystemStore((s) => s.battery);
@@ -31,19 +32,7 @@ export default function StatusIconRow() {
   });
 
   if (activeFeatures.length === 0) {
-    return (
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.85)",
-          flexShrink: 0,
-        }}
-        role="img"
-        aria-label="Idle"
-      />
-    );
+    return <IdleClock />;
   }
 
   const openFeature = (feature: StatusFeature) => {

@@ -6,6 +6,7 @@ use crate::plugins::PluginManager;
 use crate::sources::battery::BatterySource;
 use crate::sources::bluetooth::BluetoothSource;
 use crate::sources::brightness::BrightnessSource;
+use crate::sources::calls::CallHub;
 use crate::sources::media::MediaSource;
 use crate::sources::notifications::NotificationSource;
 use crate::sources::volume::VolumeSource;
@@ -24,6 +25,7 @@ pub struct SourceContext {
     pub brightness_broadcast: Option<broadcast::Sender<IpcEnvelope>>,
     pub media_source: Option<Arc<MediaSource>>,
     pub notification_source: Option<Arc<NotificationSource>>,
+    pub call_hub: Option<Arc<CallHub>>,
     pub battery_source: Option<Arc<BatterySource>>,
     pub wifi_source: Option<Arc<WifiSource>>,
     pub bluetooth_source: Option<Arc<BluetoothSource>>,

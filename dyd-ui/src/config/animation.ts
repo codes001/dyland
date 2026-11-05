@@ -27,11 +27,12 @@ export const DURATION = {
 };
 
 export const PILL_SIZE = {
-  dormant: { width: 126, height: 40 },
-  active: { width: 180, height: 40 },
-  notification: { width: 200, height: 40 },
-  media: { width: 230, height: 40 },
-  expanded: { width: 380, height: 200 },
+  dormant: { width: 122, height: 38 },
+  active: { width: 174, height: 38 },
+  notification: { width: 192, height: 38 },
+  media: { width: 222, height: 38 },
+  call: { width: 300, height: 38 },
+  expanded: { width: 368, height: 192 },
 };
 
 export const IDLE_TIMEOUT = 4000;

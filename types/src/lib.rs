@@ -69,6 +69,11 @@ pub enum IpcCommand {
     NotificationClose {
         id: u32,
     },
+    CallControl {
+        action: String,
+        #[serde(default)]
+        muted: Option<bool>,
+    },
     SetDnd {
         enabled: bool,
     },
@@ -193,6 +198,12 @@ pub struct CallPayload {
     pub app_name: String,
     pub summary: String,
     pub body: Option<String>,
+    /// `ringing` until the call is picked up, then `active`.
+    #[serde(default)]
+    pub phase: String,
+    /// Unix seconds when the call was answered. `0` while it is still ringing.
+    #[serde(default)]
+    pub started_at: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

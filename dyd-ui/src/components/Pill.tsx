@@ -14,8 +14,11 @@ export interface PillProps {
   children?: React.ReactNode;
 }
 
-function getSize(state: PillState, hasNotification: boolean, hasActiveMedia: boolean) {
+function getSize(state: PillState, hasNotification: boolean, hasCall: boolean, hasActiveMedia: boolean) {
   if (state === "hidden") return { width: 0, height: 0 };
+  if (hasCall && (state === "dormant" || state === "active")) {
+    return PILL_SIZE.call;
+  }
   if (hasNotification && (state === "dormant" || state === "active")) {
     return PILL_SIZE.notification;
   }
@@ -31,7 +34,8 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
   const isFullscreen = usePillStore((s) => s.isFullscreen);
   const transitionTo = usePillStore((s) => s.transitionTo);
   const resetIdleTimer = usePillStore((s) => s.resetIdleTimer);
-  const hasNotification = useNotificationStore((s) => s.notification !== null);
+  const hasCall = useNotificationStore((s) => s.call !== null);
+  const hasNotification = useNotificationStore((s) => s.notification !== null || s.call !== null);
   const hasActiveMedia = useMediaStore((s) => s.media?.playbackStatus === "playing");
   const reduceMotion = useConfigStore((s) => s.config?.accessibility?.reduce_motion);
   const setPreviousFullscreen = useRef(false);
@@ -70,7 +74,7 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
     }
   }, [isFullscreen]);
 
-  const size = getSize(state, hasNotification, hasActiveMedia);
+  const size = getSize(state, hasNotification, hasCall, hasActiveMedia);
   const isInteractive =
     state === "active" || state === "expanded" || (state === "dormant" && (hasNotification || hasActiveMedia));
   const isHidden = state === "hidden";
@@ -106,13 +110,13 @@ export default function Pill({ children, onLongPress }: PillProps & { onLongPres
       className="pill"
       style={{
         position: "fixed",
-        top: 10,
+        top: 0,
         left: "50%",
         transform: "translateX(-50%)",
         backgroundColor: "var(--pill-bg)",
         color: "var(--pill-text)",
         border: "1px solid var(--pill-border)",
-        borderRadius: 18,
+        borderRadius: 17,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

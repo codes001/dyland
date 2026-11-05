@@ -11,12 +11,14 @@
  * the dash. A normal window's stick() is cleared by any workspace move.
  */
 
+import Atspi from 'gi://Atspi';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { MessageTray } from 'resource:///org/gnome/shell/ui/messageTray.js';
 
 const ROLE = 'dyland-overlay';
 const APP_ID = 'app.dyland';
@@ -37,6 +39,143 @@ function looksLikeCall(app, title) {
     return known && /^(?:incoming )?(?:voice |video )?call$/.test(lowerTitle);
 }
 
+function isCallBanner(notification) {
+    if (!notification)
+        return false;
+    const title = notification.title || '';
+    const body = notification.body || notification.bannerBodyText || '';
+    const source = notification.source?.title || '';
+    const labels = (notification.actions || []).map(action => action?.label || '').join(' ');
+    if (looksLikeCall(source, `${title} ${body}`))
+        return true;
+    const blob = `${source} ${title} ${body} ${labels}`.toLowerCase();
+    const answers = ['answer', 'accept', 'decline', 'reject'].some(word => blob.includes(word));
+    return answers && blob.includes('call');
+}
+
+const ACCEPT_RE = /\b(answer|accept|pick[\s-]*up|join call|take call)\b/;
+const REJECT_RE = /\b(decline|reject|hang[\s-]*up|ignore|end(?:\s+call)?|leave(?:\s+call)?|deny|cancel call)\b/;
+const RING_TITLE = /incoming (?:voice |video )?call|\bis calling\b|calling you|\bringing\b/i;
+const ACTIVE_TITLE = /ongoing call|on a call|(?:voice|video) call with|\bcall with\b|in a call/i;
+const CALL_APP_RE = /whatsapp|snapchat|discord|telegram|signal|slack|zoom|skype|viber|teams|messenger|caprine|element|wechat|webex|threema|firefox|chrome|chromium|brave|opera|edge|epiphany|gnome-calls|\bcalls\b|\bphone\b|dialer/;
+
+function actionLabel(action) {
+    try {
+        if (typeof action?.label === 'string' && action.label)
+            return action.label;
+        if (typeof action?.get_label === 'function')
+            return action.get_label() || '';
+    } catch (e) {
+        // A disposed notification action has no label.
+    }
+    return '';
+}
+
+function pickCallAction(notification, kind) {
+    const actions = notification?.actions || [];
+    const labeled = actions.map(action => ({ action, label: actionLabel(action).toLowerCase() }));
+    const wanted = kind === 'accept' ? ACCEPT_RE : REJECT_RE;
+    const other = kind === 'accept' ? REJECT_RE : ACCEPT_RE;
+    const direct = labeled.find(item => wanted.test(item.label));
+    if (direct)
+        return direct.action;
+    const rest = labeled.filter(item => item.label && !other.test(item.label));
+    if (labeled.some(item => other.test(item.label)) && rest.length === 1)
+        return rest[0].action;
+    return null;
+}
+
+function accessibleText(node) {
+    let name = '';
+    let description = '';
+    try {
+        name = node.get_name() || '';
+    } catch (e) {
+        name = '';
+    }
+    try {
+        description = node.get_description() || '';
+    } catch (e) {
+        description = '';
+    }
+    let actions = '';
+    try {
+        const count = node.get_n_actions();
+        for (let i = 0; i < count && i < 4; i++)
+            actions += ` ${node.get_action_name(i) || ''} ${node.get_action_description(i) || ''}`;
+    } catch (e) {
+        actions = '';
+    }
+    return `${name} ${description} ${actions}`.toLowerCase();
+}
+
+function attributeBlob(node) {
+    try {
+        const attrs = node.get_attributes();
+        if (!attrs || typeof attrs.length !== 'number')
+            return '';
+        let text = '';
+        for (let i = 0; i < attrs.length && i < 32; i++)
+            text += ` ${attrs[i]}`;
+        return text;
+    } catch (e) {
+        return '';
+    }
+}
+
+function skipCallBranch(role, count) {
+    if (count <= 8)
+        return false;
+    return role === Atspi.Role.LIST
+        || role === Atspi.Role.TABLE
+        || role === Atspi.Role.TREE
+        || role === Atspi.Role.TREE_TABLE
+        || role === Atspi.Role.LIST_BOX;
+}
+
+function pressAccessible(node) {
+    let count = 0;
+    try {
+        count = node.get_n_actions();
+    } catch (e) {
+        return false;
+    }
+    if (count < 1)
+        return false;
+    let index = 0;
+    for (let i = 0; i < count; i++) {
+        let name = '';
+        try {
+            name = (node.get_action_name(i) || '').toLowerCase();
+        } catch (e) {
+            name = '';
+        }
+        if (name.includes('click') || name === 'press' || name === 'activate') {
+            index = i;
+            break;
+        }
+    }
+    try {
+        return Boolean(node.do_action(index));
+    } catch (e) {
+        return false;
+    }
+}
+
+function ancestorContext(node) {
+    let text = '';
+    let current = node;
+    for (let i = 0; i < 8 && current; i++) {
+        text += ` ${accessibleText(current)}`;
+        try {
+            current = current.get_parent();
+        } catch (e) {
+            break;
+        }
+    }
+    return text;
+}
+
 export default class DylandExtension extends Extension {
     enable() {
         this._window = null;
@@ -55,6 +194,19 @@ export default class DylandExtension extends Extension {
         this._keepingShown = false;
         this._actorSignals = [];
         this._callKey = '';
+        this._callWindow = null;
+        this._callNotification = null;
+        this._acceptAction = null;
+        this._rejectAction = null;
+        this._answered = false;
+        this._callWatch = 0;
+        this._sawCallControl = false;
+        this._missedCallControl = 0;
+        this._controlSub = 0;
+        this._bannerProto = null;
+        this._showNotification = null;
+        this._sourceWatches = [];
+        this._traySourceId = 0;
 
         const uiGroup = this._uiGroup();
         this._displayId = global.display.connect('window-created', (_display, window) => {
@@ -85,10 +237,13 @@ export default class DylandExtension extends Extension {
             this._chrome();
             this._ensureRaised();
             this._scanCalls();
+            this._suppressVisibleCallBanner();
+            this._captureVisibleCallActions();
             return GLib.SOURCE_CONTINUE;
         });
 
         this._scanExisting();
+        this._installCallControls();
         if (!uiGroup)
             console.log('dyland: shell UI group is missing; overlay cannot cover the top bar');
     }
@@ -105,6 +260,7 @@ export default class DylandExtension extends Extension {
             GLib.source_remove(this._watchId);
             this._watchId = 0;
         }
+        this._removeCallControls();
         this._park();
         this._releaseWindow();
         this._showClock();
@@ -290,17 +446,32 @@ export default class DylandExtension extends Extension {
                 continue;
             }
             const app = `${wmClass} ${appId}`.trim();
-            if (!looksLikeCall(app, title))
+            const ringing = RING_TITLE.test(title);
+            const active = !ringing && ACTIVE_TITLE.test(title);
+            if (!ringing && !active && !looksLikeCall(app, title))
                 continue;
             const appName = wmClass || appId || 'Call';
-            hit = { appName, summary: title || 'Incoming call' };
+            const phase = active ? 'active' : 'ringing';
+            hit = {
+                appName,
+                summary: title || (phase === 'active' ? 'On call' : 'Incoming call'),
+                meta,
+                phase,
+            };
             break;
         }
-        const key = hit ? `${hit.appName}|${hit.summary}` : 'off';
-        if (key === this._callKey)
-            return;
+        this._callWindow = hit?.meta || null;
+        const key = hit ? `${hit.phase}|${hit.appName}|${hit.summary}` : 'off';
+        if (key !== this._callKey && hit && (this._callKey === '' || this._callKey === 'off')) {
+            this._acceptAction = null;
+            this._rejectAction = null;
+        }
+        const same = key === this._callKey;
         this._callKey = key;
-        this._reportCall(Boolean(hit), hit?.appName ?? '', hit?.summary ?? '');
+        if (!same)
+            this._reportCall(Boolean(hit), hit?.appName ?? '', hit?.summary ?? '');
+        if (hit?.phase === 'active' && !this._answered)
+            this._markAnswered(this._callNotification);
     }
 
     _reportCall(active, appName, summary) {
@@ -319,6 +490,613 @@ export default class DylandExtension extends Extension {
             );
         } catch (e) {
             console.log(`dyland: call report failed: ${e}`);
+        }
+    }
+
+    _installCallControls() {
+        try {
+            const proto = MessageTray.prototype;
+            if (typeof proto._showNotification !== 'function') {
+                console.log('dyland: message tray has no _showNotification');
+            } else {
+                this._bannerProto = proto;
+                this._showNotification = proto._showNotification;
+                const extension = this;
+                proto._showNotification = function () {
+                    while (this._notificationQueue?.[0] && isCallBanner(this._notificationQueue[0])) {
+                        const skipped = this._notificationQueue.shift();
+                        extension._watchNotification(skipped);
+                        extension._captureCallActions(skipped);
+                        skipped.acknowledged = true;
+                        this.emit('queue-changed');
+                    }
+                    if (!this._notificationQueue?.[0] || typeof extension._showNotification !== 'function')
+                        return undefined;
+                    return extension._showNotification.apply(this, arguments);
+                };
+            }
+        } catch (e) {
+            console.log(`dyland: call banner filter unavailable: ${e}`);
+        }
+        try {
+            this._controlSub = Gio.DBus.session.signal_subscribe(
+                null,
+                'app.dyland.Island',
+                'CallControl',
+                '/app/dyland/Island',
+                null,
+                Gio.DBusSignalFlags.NONE,
+                (_conn, _sender, _path, _iface, _signal, parameters) => {
+                    let action = parameters?.deepUnpack?.() ?? '';
+                    if (Array.isArray(action))
+                        action = action[0];
+                    this._onCallControl(String(action || ''));
+                },
+            );
+        } catch (e) {
+            console.log(`dyland: call control listener failed: ${e}`);
+        }
+        this._watchNotificationSources();
+        this._suppressVisibleCallBanner();
+    }
+
+    _removeCallControls() {
+        if (this._bannerProto && this._showNotification)
+            this._bannerProto._showNotification = this._showNotification;
+        this._bannerProto = null;
+        this._showNotification = null;
+        if (this._controlSub) {
+            try {
+                Gio.DBus.session.signal_unsubscribe(this._controlSub);
+            } catch (e) {
+                console.log(`dyland: call control unsubscribe failed: ${e}`);
+            }
+            this._controlSub = 0;
+        }
+        if (this._traySourceId)
+            this._disconnect(Main.messageTray, this._traySourceId);
+        this._traySourceId = 0;
+        for (const watch of this._sourceWatches || []) {
+            try {
+                watch[0].disconnect(watch[1]);
+                watch[0]._dylandTracked = false;
+                watch[0]._dylandWatched = false;
+            } catch (e) {
+                // The source may already be destroyed with the notification.
+            }
+        }
+        this._sourceWatches = [];
+        this._acceptAction = null;
+        this._rejectAction = null;
+        this._callNotification = null;
+        this._callWindow = null;
+        this._answered = false;
+        if (this._callWatch) {
+            GLib.source_remove(this._callWatch);
+            this._callWatch = 0;
+        }
+    }
+
+    _holdCall(notification) {
+        if (!notification)
+            return;
+        this._callNotification = notification;
+        if (notification._dylandHeld)
+            return;
+        notification._dylandHeld = true;
+        if (!notification._dylandBannerLogged) {
+            notification._dylandBannerLogged = true;
+            const title = notification.title || notification.source?.title || 'call';
+            console.log(`dyland: hid the GNOME call banner for ${title}`);
+        }
+        try {
+            notification.connect('destroy', () => {
+                if (this._callNotification === notification)
+                    this._callNotification = null;
+            });
+        } catch (e) {
+            // The notification can already be going away.
+        }
+    }
+
+    _suppressVisibleCallBanner() {
+        const tray = Main.messageTray;
+        if (!tray)
+            return;
+        if (Array.isArray(tray._notificationQueue)) {
+            const kept = [];
+            let dropped = false;
+            for (const queued of tray._notificationQueue) {
+                if (isCallBanner(queued)) {
+                    this._holdCall(queued);
+                    queued.acknowledged = true;
+                    dropped = true;
+                } else {
+                    kept.push(queued);
+                }
+            }
+            if (dropped)
+                tray._notificationQueue = kept;
+        }
+        const notification = tray._notification;
+        if (!notification || !isCallBanner(notification))
+            return;
+        const showing = tray._notificationState === 1 || tray._notificationState === 2;
+        if (!showing)
+            return;
+        this._holdCall(notification);
+        notification.acknowledged = true;
+        tray._notificationRemoved = true;
+        try {
+            tray._updateState();
+        } catch (e) {
+            console.log(`dyland: failed to hide the call banner: ${e}`);
+        }
+    }
+
+    _onCallControl(action) {
+        const name = String(action || '').toLowerCase();
+        if (name !== 'accept' && name !== 'reject' && name !== 'decline')
+            return;
+        const kind = name === 'accept' ? 'accept' : 'reject';
+        const now = GLib.get_monotonic_time();
+        if (now - (this._callControlAt || 0) < 700000)
+            return;
+        this._callControlAt = now;
+
+        this._captureVisibleCallActions();
+        const notification = this._bestCallNotification();
+        const labels = (notification?.actions || []).map(actionLabel).filter(Boolean);
+        const button = this._liveCallAction(kind) || (kind === 'accept' ? this._acceptAction : this._rejectAction);
+        const saved = button ? actionLabel(button) : 'none';
+        console.log(`dyland: ${kind} requested; banner actions=${labels.join(', ') || 'none'}; using=${saved}`);
+        if (button) {
+            try {
+                button.activate();
+                console.log(`dyland: ${kind} used the notification button "${actionLabel(button)}"`);
+                if (kind === 'accept')
+                    this._markAnswered(notification);
+                else
+                    this._reportEnded('notification');
+                return;
+            } catch (e) {
+                console.log(`dyland: notification ${kind} failed: ${e}`);
+            }
+        }
+
+        const meta = this._findCallWindow();
+        if (meta)
+            this._activateWindow(meta);
+        if (this._pressAccessibleCallButton(kind))
+            return;
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+            if (!this._enabled)
+                return GLib.SOURCE_REMOVE;
+            if (this._pressAccessibleCallButton(kind))
+                return GLib.SOURCE_REMOVE;
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 700, () => {
+                if (!this._enabled)
+                    return GLib.SOURCE_REMOVE;
+                if (!this._pressAccessibleCallButton(kind))
+                    console.log(`dyland: no ${kind} button in the call app`);
+                return GLib.SOURCE_REMOVE;
+            });
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _markAnswered(notification) {
+        const app = notification?.source?.title || 'Call';
+        const summary = notification?.title || 'Call';
+        this._answered = true;
+        this._sawCallControl = false;
+        this._missedCallControl = 0;
+        this._callDaemon('SetCallAnswered', new GLib.Variant('(ss)', [String(app), String(summary)]));
+        if (this._callWatch)
+            GLib.source_remove(this._callWatch);
+        this._callWatch = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
+            if (!this._enabled || !this._answered)
+                return GLib.SOURCE_REMOVE;
+            if (this._findCallButton('reject')) {
+                this._sawCallControl = true;
+                this._missedCallControl = 0;
+                return GLib.SOURCE_CONTINUE;
+            }
+            if (!this._sawCallControl)
+                return GLib.SOURCE_CONTINUE;
+            this._missedCallControl += 1;
+            if (this._missedCallControl < 3)
+                return GLib.SOURCE_CONTINUE;
+            this._reportEnded('controls-gone');
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _reportEnded(reason) {
+        this._answered = false;
+        this._sawCallControl = false;
+        this._missedCallControl = 0;
+        if (this._callWatch) {
+            GLib.source_remove(this._callWatch);
+            this._callWatch = 0;
+        }
+        this._callDaemon('SetCallEnded', new GLib.Variant('(s)', [String(reason || 'ended')]));
+    }
+
+    _callDaemon(method, parameters) {
+        try {
+            Gio.DBus.session.call(
+                'app.dyland',
+                '/app/dyland/Island',
+                'app.dyland.Island',
+                method,
+                parameters,
+                null,
+                Gio.DBusCallFlags.NO_AUTO_START,
+                -1,
+                null,
+                (_connection, result) => {
+                    try {
+                        Gio.DBus.session.call_finish(result);
+                    } catch (e) {
+                        console.log(`dyland: ${method} failed: ${e}`);
+                    }
+                },
+            );
+        } catch (e) {
+            console.log(`dyland: ${method} failed: ${e}`);
+        }
+    }
+
+    _watchNotificationSources() {
+        const tray = Main.messageTray;
+        if (!tray)
+            return;
+        try {
+            this._traySourceId = tray.connect('source-added', (_tray, source) => {
+                this._trackSource(source);
+            });
+        } catch (e) {
+            console.log(`dyland: could not watch notification sources: ${e}`);
+        }
+        for (const source of tray.getSources?.() || [])
+            this._trackSource(source);
+    }
+
+    _trackSource(source) {
+        if (!source || source._dylandTracked)
+            return;
+        source._dylandTracked = true;
+        try {
+            const added = source.connect('notification-added', (_source, notification) => {
+                this._watchNotification(notification);
+            });
+            this._sourceWatches.push([source, added]);
+        } catch (e) {
+            console.log(`dyland: could not watch a notification source: ${e}`);
+        }
+        for (const notification of source.notifications || [])
+            this._watchNotification(notification);
+    }
+
+    _watchNotification(notification) {
+        if (!notification || notification._dylandWatched)
+            return;
+        notification._dylandWatched = true;
+        const capture = () => this._captureCallActions(notification);
+        try {
+            const id = notification.connect('action-added', () => capture());
+            this._sourceWatches.push([notification, id]);
+        } catch (e) {
+            // The notification can already be going away.
+        }
+        capture();
+    }
+
+    _captureCallActions(notification) {
+        if (!notification)
+            return;
+        let accept = null;
+        let reject = null;
+        for (const action of notification.actions || []) {
+            const label = actionLabel(action).toLowerCase();
+            if (!label || label === 'settings')
+                continue;
+            if (ACCEPT_RE.test(label))
+                accept = action;
+            else if (REJECT_RE.test(label))
+                reject = action;
+        }
+        if (accept)
+            this._acceptAction = accept;
+        if (reject)
+            this._rejectAction = reject;
+        if ((accept || reject) && !notification._dylandActionsLogged) {
+            notification._dylandActionsLogged = true;
+            const accepted = accept ? actionLabel(accept) : 'none';
+            const rejected = reject ? actionLabel(reject) : 'none';
+            console.log(`dyland: saved call actions accept=${accepted} decline=${rejected}`);
+        }
+        if (accept || reject || isCallBanner(notification))
+            this._holdCall(notification);
+    }
+
+    _captureVisibleCallActions() {
+        const sources = Main.messageTray?.getSources?.() || [];
+        for (const source of sources) {
+            for (const notification of source.notifications || [])
+                this._captureCallActions(notification);
+        }
+        this._captureCallActions(this._callNotification);
+    }
+
+    _liveCallAction(kind) {
+        const notifications = [];
+        if (this._callNotification)
+            notifications.push(this._callNotification);
+        const sources = Main.messageTray?.getSources?.() || [];
+        for (const source of sources) {
+            for (const notification of source.notifications || [])
+                notifications.push(notification);
+        }
+        const seen = new Set();
+        for (const notification of notifications) {
+            if (!notification || seen.has(notification))
+                continue;
+            seen.add(notification);
+            const button = pickCallAction(notification, kind);
+            if (button)
+                return button;
+        }
+        return null;
+    }
+
+    _bestCallNotification() {
+        let fallback = this._callNotification;
+        const sources = Main.messageTray?.getSources?.() || [];
+        for (const source of sources) {
+            for (const notification of source.notifications || []) {
+                const title = notification.title || '';
+                const body = notification.body || '';
+                const sourceTitle = source.title || notification.source?.title || '';
+                if (!isCallBanner(notification) && !looksLikeCall(sourceTitle, `${title} ${body}`))
+                    continue;
+                if ((notification.actions || []).length)
+                    return notification;
+                fallback = notification;
+            }
+        }
+        return fallback;
+    }
+
+    _findCallWindow() {
+        if (this._callWindow)
+            return this._callWindow;
+        let known = null;
+        const windows = global.display?.list_all_windows?.() ?? [];
+        for (const meta of windows) {
+            if (!meta || this._isIsland(meta))
+                continue;
+            let title = '';
+            let wmClass = '';
+            let appId = '';
+            try {
+                title = meta.get_title?.() || '';
+                wmClass = meta.get_wm_class?.() || '';
+                appId = meta.get_gtk_application_id?.() || '';
+            } catch (e) {
+                continue;
+            }
+            const app = `${wmClass} ${appId}`;
+            if (looksLikeCall(app, title))
+                return meta;
+            const blob = `${app} ${title}`.toLowerCase();
+            if (CALL_APP_RE.test(blob))
+                known = known || meta;
+        }
+        return known;
+    }
+
+    _activateWindow(meta) {
+        try {
+            const time = global.get_current_time?.() || 0;
+            meta.get_workspace?.()?.activate?.(time);
+            meta.activate(time);
+            let title = '';
+            try {
+                title = meta.get_title?.() || meta.get_wm_class?.() || '';
+            } catch (e) {
+                title = '';
+            }
+            console.log(`dyland: focused call window ${title}`);
+        } catch (e) {
+            console.log(`dyland: focus call failed: ${e}`);
+        }
+    }
+
+    _atspiDesktop() {
+        try {
+            if (!this._atspiReady) {
+                Atspi.init();
+                this._atspiReady = true;
+            }
+            return Atspi.get_desktop(0);
+        } catch (e) {
+            console.log(`dyland: accessibility is unavailable: ${e}`);
+            return null;
+        }
+    }
+
+    _findCallButton(kind) {
+        const desktop = this._atspiDesktop();
+        if (!desktop)
+            return null;
+        const wanted = kind === 'accept' ? ACCEPT_RE : REJECT_RE;
+        const frames = this._callFrames(desktop);
+        const roots = frames.length ? frames : this._foreignApps(desktop);
+        let best = null;
+        for (const root of roots) {
+            const hits = [];
+            this._collectCallButtons(root, wanted, kind, 0, { seen: 0 }, hits);
+            for (const hit of hits) {
+                if (!best || hit.score > best.score)
+                    best = hit;
+            }
+            if (best && frames.length)
+                break;
+        }
+        return best;
+    }
+
+    _pressAccessibleCallButton(kind) {
+        const found = this._findCallButton(kind);
+        if (!found)
+            return false;
+        try {
+            if (!pressAccessible(found.node))
+                return false;
+            const label = accessibleText(found.node).trim();
+            console.log(`dyland: ${kind} pressed "${label || 'button'}"`);
+            if (kind === 'accept')
+                this._markAnswered(this._callNotification);
+            else
+                this._confirmEnded();
+            return true;
+        } catch (e) {
+            console.log(`dyland: accessibility ${kind} failed: ${e}`);
+            return false;
+        }
+    }
+
+    _confirmEnded() {
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+            if (!this._enabled)
+                return GLib.SOURCE_REMOVE;
+            if (!this._findCallButton('reject'))
+                this._reportEnded('button');
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _callFrames(desktop) {
+        const frames = [];
+        let count = 0;
+        try {
+            count = desktop.get_child_count();
+        } catch (e) {
+            return frames;
+        }
+        for (let i = 0; i < count; i++) {
+            let app = null;
+            try {
+                app = desktop.get_child_at_index(i);
+            } catch (e) {
+                continue;
+            }
+            if (!app)
+                continue;
+            const appName = accessibleText(app);
+            if (/dyland|dyd-ui|gnome-shell|ibus/.test(appName))
+                continue;
+            const browser = /firefox|chrome|chromium|brave|opera|edge|epiphany/.test(appName);
+            let children = 0;
+            try {
+                children = app.get_child_count();
+            } catch (e) {
+                children = 0;
+            }
+            for (let c = 0; c < children && c < 24; c++) {
+                let frame = null;
+                try {
+                    frame = app.get_child_at_index(c);
+                } catch (e) {
+                    continue;
+                }
+                if (!frame)
+                    continue;
+                const name = accessibleText(frame);
+                if (CALL_TEXT.test(name) || /whatsapp|snapchat|telegram|signal|discord|zoom|skype|messenger|teams/.test(name))
+                    frames.push(frame);
+            }
+            if (!browser && /whatsapp|snapchat|telegram|signal|discord|zoom|skype/.test(appName))
+                frames.push(app);
+        }
+        return frames;
+    }
+
+    _foreignApps(desktop) {
+        const apps = [];
+        let count = 0;
+        try {
+            count = desktop.get_child_count();
+        } catch (e) {
+            return apps;
+        }
+        for (let i = 0; i < count; i++) {
+            let app = null;
+            try {
+                app = desktop.get_child_at_index(i);
+            } catch (e) {
+                continue;
+            }
+            if (!app)
+                continue;
+            const appName = accessibleText(app);
+            if (/dyland|dyd-ui|gnome-shell|ibus/.test(appName))
+                continue;
+            apps.push(app);
+        }
+        return apps;
+    }
+
+    _collectCallButtons(node, wanted, kind, depth, budget, hits) {
+        if (!node || depth > 30 || budget.seen > 8000 || hits.length > 8)
+            return;
+        budget.seen += 1;
+        let role = -1;
+        try {
+            role = node.get_role();
+        } catch (e) {
+            role = -1;
+        }
+        if (role === Atspi.Role.PUSH_BUTTON || role === Atspi.Role.BUTTON || role === Atspi.Role.TOGGLE_BUTTON) {
+            let showing = false;
+            let enabled = false;
+            try {
+                const states = node.get_state_set();
+                showing = states.contains(Atspi.StateType.SHOWING);
+                enabled = states.contains(Atspi.StateType.SENSITIVE) || states.contains(Atspi.StateType.ENABLED);
+            } catch (e) {
+                showing = false;
+            }
+            const text = `${accessibleText(node)} ${attributeBlob(node)}`.toLowerCase();
+            const inCall = CALL_TEXT.test(ancestorContext(node)) || CALL_APP_RE.test(ancestorContext(node)) || CALL_APP_RE.test(text);
+            if (showing && enabled && wanted.test(text) && inCall) {
+                let score = 1;
+                if (kind === 'reject' && /\b(end(?:\s+call)?|leave(?:\s+call)?|hang)/.test(text))
+                    score = 3;
+                if (kind === 'accept' && /\b(accept|answer)\b/.test(text))
+                    score = 3;
+                hits.push({ node, score });
+            }
+        }
+        let children = 0;
+        try {
+            children = node.get_child_count();
+        } catch (e) {
+            return;
+        }
+        if (skipCallBranch(role, children))
+            return;
+        const limit = Math.min(children, 160);
+        for (let i = 0; i < limit; i++) {
+            let child = null;
+            try {
+                child = node.get_child_at_index(i);
+            } catch (e) {
+                continue;
+            }
+            this._collectCallButtons(child, wanted, kind, depth + 1, budget, hits);
         }
     }
 

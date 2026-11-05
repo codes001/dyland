@@ -34,6 +34,7 @@ export type IpcCommand =
   | { type: "CyclePlayer"; payload: { player?: string } }
   | { type: "NotificationAction"; payload: { id: number; action_key: string; reply_text?: string } }
   | { type: "NotificationClose"; payload: { id: number } }
+  | { type: "CallControl"; payload: { action: "accept" | "reject" | "mute"; muted?: boolean } }
   | { type: "SetDnd"; payload: { enabled: boolean } }
   | { type: "SetVolume"; payload: { volume: number } }
   | { type: "SetMute"; payload: { muted: boolean } }
@@ -79,6 +80,10 @@ export interface CallPayload {
   app_name: string;
   summary: string;
   body: string | null;
+  /** `ringing` until the call is picked up, then `active`. */
+  phase?: string;
+  /** Unix seconds when the call was answered. `0` while it is still ringing. */
+  started_at?: number;
 }
 
 export interface NotificationActionItem {

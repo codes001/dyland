@@ -1,12 +1,17 @@
 import { create } from "zustand";
 import type { NotificationPayload } from "../../../types/src/index";
 
+export interface IslandCall extends NotificationPayload {
+  phase?: string;
+  started_at?: number;
+}
+
 export interface NotificationStore {
   notification: NotificationPayload | null;
-  call: NotificationPayload | null;
+  call: IslandCall | null;
   setNotification: (payload: NotificationPayload) => void;
   clearNotification: () => void;
-  setCall: (payload: NotificationPayload) => void;
+  setCall: (payload: IslandCall) => void;
   clearCall: () => void;
 }
 

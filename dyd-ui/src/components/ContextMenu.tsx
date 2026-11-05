@@ -32,7 +32,7 @@ export default function ContextMenu({ isOpen, items, onClose }: ContextMenuProps
             data-island-hit=""
             style={{
               position: "absolute",
-              top: 58,
+              top: 48,
               left: "50%",
               x: "-50%",
               marginTop: 4,
